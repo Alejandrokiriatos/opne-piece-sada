@@ -63,10 +63,10 @@ jobs:
               }
           """
           if "signingConfigs {" not in s:
-              s = s.replace("android {", "android {\\n" + signing, 1)
+              s = s.replace("android {", "android {\n" + signing, 1)
           if "debug {" not in s[s.find("buildTypes {"):]:
-              s = s.replace("buildTypes {", "buildTypes {\\n        debug { signingConfig signingConfigs.stable }", 1)
-          s = s.replace("release {", "release {\\n            signingConfig signingConfigs.stable", 1)
+              s = s.replace("buildTypes {", "buildTypes {\n        debug { signingConfig signingConfigs.stable }", 1)
+          s = s.replace("release {", "release {\n            signingConfig signingConfigs.stable", 1)
           p.write_text(s)
           PY
       - name: Build APK
