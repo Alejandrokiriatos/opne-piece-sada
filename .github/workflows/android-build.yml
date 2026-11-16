@@ -38,9 +38,9 @@ jobs:
           npx cap add android
           npx cap sync android
           # Add native APK installation so the app downloads in-place and opens Android's installer.
-          if [ "\${{ matrix.app }}" = "customer" ]; then PACKAGE="com.butterflycafe.app"; else PACKAGE="com.butterflycafe.admin"; fi
+          if [ "${{ matrix.app }}" = "customer" ]; then PACKAGE="com.butterflycafe.app"; else PACKAGE="com.butterflycafe.admin"; fi
           export PACKAGE
-          JAVA_DIR="android/app/src/main/java/\${PACKAGE//./\/}"
+          JAVA_DIR="android/app/src/main/java/${PACKAGE//./\/}"
           mkdir -p "$JAVA_DIR" android/app/src/main/res/xml
           cp native/ApkInstallerPlugin.java "$JAVA_DIR/ApkInstallerPlugin.java"
           cat > android/app/src/main/res/xml/bc_file_paths.xml <<'XML'
@@ -62,7 +62,7 @@ jobs:
           if not any(p.get(ns + "name") == "android.permission.REQUEST_INSTALL_PACKAGES" for p in root.findall("uses-permission")):
               ET.SubElement(root, "uses-permission", {ns + "name": "android.permission.REQUEST_INSTALL_PACKAGES"})
           app = root.find("application")
-          authority = "\${applicationId}.fileprovider"
+          authority = "${applicationId}.fileprovider"
           if not any(p.get(ns + "authorities") == authority for p in app.findall("provider")):
               provider = ET.SubElement(app, "provider", {
                   ns + "name": "androidx.core.content.FileProvider",
@@ -78,8 +78,8 @@ jobs:
           ET.ElementTree(root).write(manifest, encoding="utf-8", xml_declaration=True)
           main = Path("android/app/src/main/java") / package.replace(".", "/") / "MainActivity.java"
           source = main.read_text()
-          source = source.replace("import com.getcapacitor.BridgeActivity;", "import com.getcapacitor.BridgeActivity;\\nimport " + package + ".ApkInstallerPlugin;")
-          source = source.replace("super.onCreate(savedInstanceState);", "registerPlugin(ApkInstallerPlugin.class);\\n        super.onCreate(savedInstanceState);")
+          source = source.replace("import com.getcapacitor.BridgeActivity;", "import com.getcapacitor.BridgeActivity;\nimport " + package + ".ApkInstallerPlugin;")
+          source = source.replace("super.onCreate(savedInstanceState);", "registerPlugin(ApkInstallerPlugin.class);\n        super.onCreate(savedInstanceState);")
           main.write_text(source)
           PY
           sed -i -E "s/versionCode [0-9]+/versionCode $GITHUB_RUN_NUMBER/" android/app/build.gradle
