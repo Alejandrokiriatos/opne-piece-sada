@@ -1,6 +1,6 @@
 {
-  "version": 7,
-  "updatedAt": "2026-11-16T19:21:30.123Z",
+  "version": 8,
+  "updatedAt": "2026-11-16T19:22:33.288Z",
   "cafeName": "Butterfly Café",
   "tagline": "Donde cada sorbo se siente especial ♡",
   "currency": "USD",
@@ -80,7 +80,7 @@
       "category": "cafes",
       "image": "https://raw.githubusercontent.com/Alejandrokiriatos/opne-piece-sada/main/apps/customer/assets/products/item-1794854466256.png",
       "active": true,
-      "featured": false,
+      "featured": true,
       "bestSeller": false
     }
   ],
