@@ -5,5 +5,7 @@
   "display": "standalone",
   "background_color": "#f4e9fb",
   "theme_color": "#7b2cbf",
-  "icons": []
+  "icons": [
+    {"src":"assets/butterfly-cafe-logo.svg","sizes":"any","type":"image/svg+xml","purpose":"any maskable"}
+  ]
 }
