@@ -14,7 +14,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        app: [admin]
+        app: [customer]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -32,7 +32,7 @@ jobs:
           mkdir -p www
           cp index.html app.js styles.css manifest.webmanifest www/
           npx esbuild app-update.js --bundle --format=iife --outfile=www/app-update.bundle.js
-          npx esbuild token-storage.js --bundle --format=iife --outfile=www/token-storage.bundle.js
+          if [ "${{ matrix.app }}" = "admin" ]; then npx esbuild token-storage.js --bundle --format=iife --outfile=www/token-storage.bundle.js; fi
           cp -R assets www/assets
           printf 'window.BC_APP_VERSION=%s;window.BC_APP_NAME="%s";\n' "$GITHUB_RUN_NUMBER" "${{ matrix.app }}" > www/build-info.js
           sed -i 's|<script src="app-update.js"></script>|<script src="build-info.js"></script><script src="app-update.bundle.js"></script>|' www/index.html
@@ -44,7 +44,7 @@ jobs:
           JAVA_DIR="android/app/src/main/java/${PACKAGE//./\/}"
           mkdir -p "$JAVA_DIR" android/app/src/main/res/xml
           cp native/ApkInstallerPlugin.java "$JAVA_DIR/ApkInstallerPlugin.java"
-          cp native/SecureTokenPlugin.java "$JAVA_DIR/SecureTokenPlugin.java"
+          if [ "${{ matrix.app }}" = "admin" ]; then cp native/SecureTokenPlugin.java "$JAVA_DIR/SecureTokenPlugin.java"; fi
           cp native/ApkInstallStatusReceiver.java "$JAVA_DIR/ApkInstallStatusReceiver.java"
           cat > android/app/src/main/res/xml/bc_file_paths.xml <<'XML'
           <?xml version="1.0" encoding="utf-8"?>
@@ -88,7 +88,7 @@ jobs:
               raise SystemExit(f"Expected exactly one MainActivity.java, found {len(candidates)}")
           main = candidates[0]
           source = main.read_text()
-          plugin_classes = ["ApkInstallerPlugin", "SecureTokenPlugin"]
+          plugin_classes = ["ApkInstallerPlugin"] + (["SecureTokenPlugin"] if package.endswith(".admin") else [])
           import re
           imports = ["import " + package + "." + name + ";" for name in plugin_classes]
           for import_line in imports:
@@ -175,12 +175,12 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           path: artifacts
-      - name: Publish BC Admin APK as a versioned release
+      - name: Publish Butterfly Café customer APK as a versioned release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           TAG="v${GITHUB_RUN_NUMBER}"
           gh release create "$TAG" \
-            artifacts/butterfly-cafe-admin-apk/butterfly-cafe-admin.apk \
-            --title "BC Admin ${TAG}" \
-            --notes "Actualización de BC Admin v${GITHUB_RUN_NUMBER}. El token de GitHub se guarda cifrado en el almacenamiento privado del teléfono y se recupera tras actualizar la aplicación."
+            artifacts/butterfly-cafe-customer-apk/butterfly-cafe-customer.apk \
+            --title "Butterfly Café ${TAG}" \
+            --notes "Corrección de navegación y visualización de secciones de Butterfly Café para clientes."
