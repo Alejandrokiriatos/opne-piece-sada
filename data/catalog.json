@@ -1,6 +1,6 @@
 {
-  "version": 5,
-  "updatedAt": "2026-11-16T18:41:29.269Z",
+  "version": 6,
+  "updatedAt": "2026-11-16T19:21:09.803Z",
   "cafeName": "Butterfly Café",
   "tagline": "Donde cada sorbo se siente especial ♡",
   "currency": "USD",
@@ -58,7 +58,7 @@
       "price": 5,
       "image": "https://images.unsplash.com/photo-1533134242443-d4fd215305ad?auto=format&fit=crop&w=700&q=85",
       "active": true,
-      "featured": false,
+      "featured": true,
       "bestSeller": false
     },
     {
@@ -93,10 +93,48 @@
   "appUpdate": {},
   "about": {
     "title": "Butterfly Café",
-    "hours": "",
+    "hours": "Lunes: Horario por definir · Martes: Horario por definir · Miércoles: Horario por definir · Jueves: Horario por definir · Viernes: Horario por definir · Sábado: Horario por definir · Domingo: Horario por definir",
     "description": "",
     "owners": "",
     "phone": "",
-    "socials": []
+    "socials": [],
+    "weeklyHours": {
+      "monday": {
+        "closed": false,
+        "open": "",
+        "close": ""
+      },
+      "tuesday": {
+        "closed": false,
+        "open": "",
+        "close": ""
+      },
+      "wednesday": {
+        "closed": false,
+        "open": "",
+        "close": ""
+      },
+      "thursday": {
+        "closed": false,
+        "open": "",
+        "close": ""
+      },
+      "friday": {
+        "closed": false,
+        "open": "",
+        "close": ""
+      },
+      "saturday": {
+        "closed": false,
+        "open": "",
+        "close": ""
+      },
+      "sunday": {
+        "closed": false,
+        "open": "",
+        "close": ""
+      }
+    },
+    "closureAlert": null
   }
 }
