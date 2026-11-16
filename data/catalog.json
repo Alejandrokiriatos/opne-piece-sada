@@ -1,6 +1,6 @@
 {
-  "version": 1,
-  "updatedAt": "2026-11-16T15:18:24.861Z",
+  "version": 2,
+  "updatedAt": "2026-11-16T15:35:42.919Z",
   "cafeName": "Butterfly Café",
   "tagline": "Donde cada sorbo se siente especial ♡",
   "currency": "USD",
@@ -12,29 +12,14 @@
       "icon": "☕"
     },
     {
-      "id": "frappes",
-      "name": "Frappés",
-      "icon": "🥤"
+      "id": "dulces",
+      "name": "Dulces",
+      "icon": "🧁"
     },
     {
-      "id": "postres",
-      "name": "Postres",
-      "icon": "🍰"
-    },
-    {
-      "id": "pasteles",
-      "name": "Pasteles",
-      "icon": "🎂"
-    },
-    {
-      "id": "bebidas",
-      "name": "Bebidas",
-      "icon": "🧋"
-    },
-    {
-      "id": "especiales",
-      "name": "Especiales",
-      "icon": "🦋"
+      "id": "eventos",
+      "name": "Eventos",
+      "icon": "🎉"
     }
   ],
   "products": [
@@ -46,37 +31,41 @@
       "price": 3.5,
       "image": "https://images.unsplash.com/photo-1570968915860-54d5c301fa9f?auto=format&fit=crop&w=700&q=85",
       "active": true,
-      "featured": true
+      "featured": true,
+      "bestSeller": true
     },
     {
       "id": "mocha",
       "name": "Frappé de Mocha",
       "description": "Chocolate, café y crema.",
-      "category": "frappes",
+      "category": "cafes",
       "price": 4.5,
       "image": "https://images.unsplash.com/photo-1572490122747-3968b75cc699?auto=format&fit=crop&w=700&q=85",
       "active": true,
-      "featured": true
+      "featured": true,
+      "bestSeller": false
     },
     {
       "id": "cheesecake",
       "name": "Cheesecake",
       "description": "Tarta cremosa con frutos rojos.",
-      "category": "postres",
+      "category": "dulces",
       "price": 5,
       "image": "https://images.unsplash.com/photo-1533134242443-d4fd215305ad?auto=format&fit=crop&w=700&q=85",
       "active": true,
-      "featured": true
+      "featured": false,
+      "bestSeller": false
     },
     {
       "id": "smoothie",
       "name": "Smoothie de Frutos Rojos",
       "description": "Fruta fresca y yogur.",
-      "category": "bebidas",
+      "category": "dulces",
       "price": 4,
       "image": "https://images.unsplash.com/photo-1505252585461-04db1eb84625?auto=format&fit=crop&w=700&q=85",
       "active": true,
-      "featured": true
+      "featured": false,
+      "bestSeller": false
     }
   ],
   "promotions": []
