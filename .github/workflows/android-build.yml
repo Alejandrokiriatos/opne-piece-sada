@@ -14,7 +14,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        app: [customer, admin]
+        app: [admin]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -170,13 +170,12 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           path: artifacts
-      - name: Publish both APKs as a versioned release
+      - name: Publish BC Admin APK as a versioned release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           TAG="v${GITHUB_RUN_NUMBER}"
           gh release create "$TAG" \
-            artifacts/butterfly-cafe-customer-apk/butterfly-cafe-customer.apk \
             artifacts/butterfly-cafe-admin-apk/butterfly-cafe-admin.apk \
-            --title "Butterfly Café ${TAG}" \
-            --notes "VERSIÓN DE PRUEBA v${GITHUB_RUN_NUMBER}: comprobar la actualización desde v94 y el nuevo instalador Android PackageInstaller. Abre la aplicación, espera el aviso, descarga y pulsa INSTALAR AHORA. Confirma si Android muestra la pantalla de instalación."
+            --title "BC Admin ${TAG}" \
+            --notes "Actualización exclusiva de BC Admin v${GITHUB_RUN_NUMBER}. Incluye el registro verificado del instalador nativo ApkInstallerPlugin. Abre BC Admin, espera el aviso de actualización, descarga y pulsa INSTALAR AHORA. Confirma si Android muestra la pantalla de instalación."
