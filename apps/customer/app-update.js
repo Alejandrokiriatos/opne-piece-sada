@@ -106,9 +106,13 @@ const ApkInstaller = registerPlugin("ApkInstaller");
     try {
       const response = await fetch(RELEASE_API + "?check=" + Date.now(), { cache: "no-store", headers: { Accept: "application/vnd.github+json" } });
       if (!response.ok) throw new Error("GitHub respondió " + response.status);
-      const release = await response.json();
+      const releases = await response.json();
+      // La última publicación global puede pertenecer a Admin. Buscar la release más reciente que incluya el APK de esta app.
+      const assetName = "butterfly-cafe-" + APP + ".apk";
+      const release = (Array.isArray(releases) ? releases : []).find(item => (item.assets || []).some(a => a.name === assetName));
+      if (!release) return;
       const version = Number(String(release.tag_name || "").replace(/^v/i, ""));
-      const asset = (release.assets || []).find(a => a.name === "butterfly-cafe-" + APP + ".apk");
+      const asset = (release.assets || []).find(a => a.name === assetName);
       if (Number.isFinite(version) && version > CURRENT && version > latestSeen && asset && asset.browser_download_url) {
         latestSeen = version;
         showUpdate(release, asset);
