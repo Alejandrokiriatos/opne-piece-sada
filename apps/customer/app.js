@@ -8,7 +8,7 @@ function productCard(p){return '<article class="product"><img src="'+(p.image||"
 function render(){if(!catalog)return;const q=$("#search").value.toLowerCase(),products=catalog.products.filter(p=>p.active!==false&&(p.name+" "+(p.description||"")).toLowerCase().includes(q));
 const pages=["products","event-feature","about-page"];pages.forEach(id=>$("#"+id).hidden=true);const closure=catalog.about?.closureAlert,now=new Date(),today=now.getFullYear()+"-"+String(now.getMonth()+1).padStart(2,"0")+"-"+String(now.getDate()).padStart(2,"0");const notice=$("#closure-notice");if(closure?.date===today&&closure.message){notice.hidden=false;notice.innerHTML="<b>⚠️ Aviso importante: hoy estamos cerrados</b><span>"+closure.message+"</span>"}else{notice.hidden=true;notice.textContent=""}$("#search-wrap").hidden=view==="events"||view==="about";$("#hero").hidden=view!=="home";
 let title="",kicker="",items=[];
-if(view==="home"){title="Cafés destacados";kicker="SELECCIÓN DE LA CASA";items=products.filter(p=>typeOfProduct(p)==="coffee"&&(p.featured||p.bestSeller||p.mostOrdered));if(!items.length)items=products.filter(p=>typeOfProduct(p)==="coffee");if(!showAll)items=items.slice(0,4)}
+if(view==="home"){title="Cafés destacados";kicker="SELECCIÓN DE LA CASA";items=products.filter(p=>typeOfProduct(p)==="coffee");if(!showAll)items=items.slice(0,4)}
 else if(view==="coffee"){title="Todos nuestros cafés";kicker="NUESTRA CARTA DE CAFÉ";items=products.filter(p=>typeOfProduct(p)==="coffee")}
 else if(view==="sweets"){title="Todos nuestros dulces";kicker="ALGO DULCE PARA TI";items=products.filter(p=>typeOfProduct(p)==="sweet")}
 else if(view==="events"){title="Eventos";kicker="MOMENTOS ESPECIALES"}
