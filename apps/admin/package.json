@@ -1,6 +1,6 @@
 {
   "name": "butterfly-cafe-admin",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "private": true,
   "description": "Butterfly Café admin app",
   "scripts": {
