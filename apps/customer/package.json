@@ -10,8 +10,8 @@
     "@capacitor/android": "^7.4.3",
     "@capacitor/browser": "^7.0.0",
     "@capacitor/core": "^7.4.3",
-    "@capacitor/file-transfer": "^7.0.0",
-    "@capacitor/filesystem": "^7.0.0"
+    "@capacitor/file-transfer": "^1.0.12",
+    "@capacitor/filesystem": "^7.1.9"
   },
   "devDependencies": {
     "@capacitor/cli": "^7.4.3"
