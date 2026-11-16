@@ -2,7 +2,7 @@ const OWNER="Alejandrokiriatos",REPO="opne-piece-sada",BRANCH="main",CATALOG_URL
 let catalog=null,view="home",selectedCategory=null,showAll=false;const $=s=>document.querySelector(s);
 function money(n){return new Intl.NumberFormat("en-US",{style:"currency",currency:catalog?.currency||"USD"}).format(Number(n)||0)}
 function toast(t){const e=$("#toast");e.textContent=t;e.style.display="block";setTimeout(()=>e.style.display="none",2500)}
-function coffeeCategories(){return catalog.categories||[]}
+function coffeeCategories(){return (catalog.categories||[]).filter(c=>!sweetCategory(c))}
 function sweetCategory(c){return /dulce|postre|pastel|evento|helado/i.test(c.name)||["dulces","eventos","postres","pasteles"].includes(c.id)}
 function productCard(p){return '<article class="product"><img src="'+(p.image||"")+'" alt="'+p.name+'" loading="lazy"><h3>'+p.name+'</h3><p>'+(p.description||"")+'</p><div class="price">'+money(p.price)+'</div></article>'}
 function render(){if(!catalog)return;const q=$("#search").value.toLowerCase();const products=catalog.products.filter(p=>p.active!==false&&(p.name+" "+(p.description||"")).toLowerCase().includes(q));
