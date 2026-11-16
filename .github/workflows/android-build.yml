@@ -88,7 +88,8 @@ jobs:
           source = main.read_text()
           import_line = "import " + package + ".ApkInstallerPlugin;"
           if import_line not in source:
-              source = source.replace("package " + package + ";", "package " + package + ";\n\n" + import_line, 1)
+              import re
+          source = re.sub(r"(package\\s+[\\w.]+;)", lambda match: match.group(1) + "\\n\\n" + import_line, source, count=1)
           if "import android.os.Bundle;" not in source:
               source = source.replace(import_line, import_line + "\nimport android.os.Bundle;", 1)
           registration = "registerPlugin(ApkInstallerPlugin.class);"
