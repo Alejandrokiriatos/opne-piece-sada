@@ -9,7 +9,7 @@ function render(){
  if(!catalog)return;
  const q=$("#search").value.toLowerCase(),products=(catalog.products||[]).filter(p=>p.active!==false&&(p.name+" "+(p.description||"")).toLowerCase().includes(q));
  const productView=["home","coffee","sweets"].includes(view),eventView=view==="events",aboutView=view==="about";
- $("#products").hidden=!productView;$("#event-feature").hidden=!eventView;$("#about-page").hidden=!aboutView;
+ $("#products").hidden=!productView;$("#event-feature").hidden=!eventView;$("#about-page").hidden=!aboutView;\n // Nunca conservar ni mostrar tarjetas de productos fuera de Inicio, Café o Dulces.\n if(!productView)$("#products").replaceChildren();
  $("#section-heading").parentElement.parentElement.hidden=false;
  $("#section-title")?.toggleAttribute("hidden",false);
  $("#search-wrap").hidden=!productView;$("#hero").hidden=view!=="home";
