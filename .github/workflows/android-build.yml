@@ -1,5 +1,12 @@
 name: Build Butterfly Café Android apps
 on:
+  push:
+    branches: [main]
+    paths:
+      - 'apps/customer/**'
+      - 'apps/admin/**'
+      - 'data/**'
+      - '.github/workflows/android-build.yml'
   workflow_dispatch:
     inputs:
       app:
@@ -18,7 +25,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        app: ${{ inputs.app == 'both' && fromJSON('["customer","admin"]') || fromJSON(format('["{0}"]', inputs.app)) }}
+        app: ${{ github.event_name == 'push' && fromJSON('["customer","admin"]') || (inputs.app == 'both' && fromJSON('["customer","admin"]') || fromJSON(format('["{0}"]', inputs.app))) }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
