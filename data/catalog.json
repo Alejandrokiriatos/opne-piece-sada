@@ -1,6 +1,6 @@
 {
-  "version": 3,
-  "updatedAt": "2026-11-16T17:42:38.339Z",
+  "version": 4,
+  "updatedAt": "2026-11-16T17:47:00.011Z",
   "cafeName": "Butterfly Café",
   "tagline": "Donde cada sorbo se siente especial ♡",
   "currency": "USD",
@@ -20,6 +20,11 @@
       "id": "eventos",
       "name": "Eventos",
       "icon": "🎉"
+    },
+    {
+      "id": "pepep",
+      "name": "Pepep",
+      "icon": "🦋"
     }
   ],
   "products": [
@@ -70,9 +75,9 @@
   ],
   "promotions": [],
   "event": {
-    "title": "",
-    "winner": "",
-    "description": ""
+    "title": "El ganador del evento es",
+    "winner": "Alejandro Llorente",
+    "description": "Jfjfjdjdhehehdhhd"
   },
   "appUpdate": {}
 }
