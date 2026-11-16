@@ -2,6 +2,7 @@ package com.butterflycafe.app;
 
 import android.content.ClipData;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Build;
 import android.provider.Settings;
@@ -32,7 +33,7 @@ public class ApkInstallerPlugin extends Plugin {
             }
 
             File apk = new File(filePath);
-            if (!apk.isFile() || !apk.exists() || apk.length() == 0) {
+            if (!apk.isFile() || apk.length() == 0) {
                 call.reject("No se encontró un APK válido descargado");
                 return;
             }
@@ -43,7 +44,8 @@ public class ApkInstallerPlugin extends Plugin {
                     Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES,
                     Uri.parse("package:" + getContext().getPackageName())
                 );
-                getActivity().startActivity(settings);
+                settings.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                getContext().startActivity(settings);
                 JSObject result = new JSObject();
                 result.put("needsPermission", true);
                 call.resolve(result);
@@ -56,21 +58,37 @@ public class ApkInstallerPlugin extends Plugin {
                 apk
             );
 
-            // ACTION_INSTALL_PACKAGE abre el instalador oficial de Android.
-            // ClipData asegura que Android reciba el permiso de lectura del APK.
-            Intent installer = new Intent(Intent.ACTION_INSTALL_PACKAGE);
+            // ACTION_VIEW es la ruta de compatibilidad más amplia para abrir
+            // el instalador del sistema con un APK compartido mediante FileProvider.
+            Intent installer = new Intent(Intent.ACTION_VIEW);
             installer.setDataAndType(apkUri, "application/vnd.android.package-archive");
             installer.setClipData(ClipData.newRawUri("Butterfly Café update", apkUri));
-            installer.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-            installer.putExtra(Intent.EXTRA_RETURN_RESULT, true);
-            getActivity().startActivity(installer);
+            installer.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_ACTIVITY_NEW_TASK);
+
+            PackageManager pm = getContext().getPackageManager();
+            if (installer.resolveActivity(pm) == null) {
+                // Alternativa para dispositivos cuyo instalador solo expone esta acción.
+                installer = new Intent(Intent.ACTION_INSTALL_PACKAGE);
+                installer.setDataAndType(apkUri, "application/vnd.android.package-archive");
+                installer.setClipData(ClipData.newRawUri("Butterfly Café update", apkUri));
+                installer.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_ACTIVITY_NEW_TASK);
+                installer.putExtra(Intent.EXTRA_RETURN_RESULT, true);
+            }
+
+            if (installer.resolveActivity(pm) == null) {
+                call.reject("Android no encontró el instalador de aplicaciones");
+                return;
+            }
+
+            getContext().startActivity(installer);
 
             JSObject result = new JSObject();
             result.put("needsPermission", false);
             result.put("installerOpened", true);
             call.resolve(result);
         } catch (Exception error) {
-            call.reject("Android no pudo abrir el instalador: " + error.getMessage(), error);
+            String detail = error.getClass().getSimpleName() + ": " + error.getMessage();
+            call.reject("No se pudo abrir el instalador de Android (" + detail + ")", error);
         }
     }
 }
