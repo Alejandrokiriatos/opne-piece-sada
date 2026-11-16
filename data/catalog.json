@@ -1,6 +1,6 @@
 {
-  "version": 8,
-  "updatedAt": "2026-11-16T19:22:33.288Z",
+  "version": 9,
+  "updatedAt": "2026-11-16T18:28:06.110Z",
   "cafeName": "Butterfly Café",
   "tagline": "Donde cada sorbo se siente especial ♡",
   "currency": "USD",
@@ -20,11 +20,6 @@
       "id": "eventos",
       "name": "Eventos",
       "icon": "🎉"
-    },
-    {
-      "id": "pepep",
-      "name": "Pepep",
-      "icon": "🦋"
     }
   ],
   "products": [
