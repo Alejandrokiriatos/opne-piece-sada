@@ -65,7 +65,7 @@ const ApkInstaller = registerPlugin("ApkInstaller");
         console.error("Error al abrir el instalador", error);
         button.disabled = false;
         button.textContent = "REINTENTAR INSTALACIÓN";
-        help.textContent = "No se pudo abrir el instalador. Inténtalo otra vez.";
+        help.textContent = "Android no abrió el instalador: " + (error && error.message ? error.message : "error desconocido") + ". Puedes volver a intentarlo.";
       }
       return;
     }
