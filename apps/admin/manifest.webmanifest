@@ -1,9 +1,11 @@
 {
-  "name": "Butterfly Café Admin",
+  "name": "BC Admin — Butterfly Café",
   "short_name": "BC Admin",
   "start_url": "./",
   "display": "standalone",
   "background_color": "#f4e9fb",
   "theme_color": "#7022a6",
-  "icons": []
+  "icons": [
+    {"src":"assets/butterfly-cafe-logo.svg","sizes":"any","type":"image/svg+xml","purpose":"any maskable"}
+  ]
 }
