@@ -1,6 +1,6 @@
 {
-  "version": 2,
-  "updatedAt": "2026-11-16T15:35:42.919Z",
+  "version": 3,
+  "updatedAt": "2026-11-16T17:42:38.339Z",
   "cafeName": "Butterfly Café",
   "tagline": "Donde cada sorbo se siente especial ♡",
   "currency": "USD",
@@ -28,7 +28,7 @@
       "name": "Cappuccino",
       "description": "Café espresso con leche cremosa.",
       "category": "cafes",
-      "price": 3.5,
+      "price": 500000,
       "image": "https://images.unsplash.com/photo-1570968915860-54d5c301fa9f?auto=format&fit=crop&w=700&q=85",
       "active": true,
       "featured": true,
@@ -68,5 +68,11 @@
       "bestSeller": false
     }
   ],
-  "promotions": []
+  "promotions": [],
+  "event": {
+    "title": "",
+    "winner": "",
+    "description": ""
+  },
+  "appUpdate": {}
 }
