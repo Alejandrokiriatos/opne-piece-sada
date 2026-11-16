@@ -9,7 +9,7 @@ const ApkInstaller = registerPlugin("ApkInstaller");
   const REPO = "opne-piece-sada";
   const APP = window.BC_APP_NAME || "customer";
   const CURRENT = Number(window.BC_APP_VERSION || 0);
-  const RELEASE_API = "https://api.github.com/repos/" + OWNER + "/" + REPO + "/releases/latest";
+  const RELEASE_API = "https://api.github.com/repos/" + OWNER + "/" + REPO + "/releases?per_page=30";
   let checking = false, latestSeen = 0, downloadUri = null, downloading = false, downloaded = false, apkUrl = "";
 
   function showUpdate(release, asset) {
