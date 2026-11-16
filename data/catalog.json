@@ -1,6 +1,6 @@
 {
-  "version": 4,
-  "updatedAt": "2026-11-16T17:47:00.011Z",
+  "version": 5,
+  "updatedAt": "2026-11-16T18:41:29.269Z",
   "cafeName": "Butterfly Café",
   "tagline": "Donde cada sorbo se siente especial ♡",
   "currency": "USD",
@@ -71,6 +71,17 @@
       "active": true,
       "featured": false,
       "bestSeller": false
+    },
+    {
+      "id": "item-1794854466256",
+      "name": "Jsjddjdj",
+      "description": "Hshsgs",
+      "price": 5,
+      "category": "cafes",
+      "image": "https://raw.githubusercontent.com/Alejandrokiriatos/opne-piece-sada/main/apps/customer/assets/products/item-1794854466256.png",
+      "active": true,
+      "featured": false,
+      "bestSeller": false
     }
   ],
   "promotions": [],
@@ -79,5 +90,13 @@
     "winner": "Alejandro Llorente",
     "description": "Jfjfjdjdhehehdhhd"
   },
-  "appUpdate": {}
+  "appUpdate": {},
+  "about": {
+    "title": "Butterfly Café",
+    "hours": "",
+    "description": "",
+    "owners": "",
+    "phone": "",
+    "socials": []
+  }
 }
