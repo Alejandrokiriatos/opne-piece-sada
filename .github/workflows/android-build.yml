@@ -1,4 +1,4 @@
-name: Build Butterfly Café Android apps
+name: Build and release Butterfly Café Android apps
 on:
   push:
     branches: [main]
@@ -18,7 +18,7 @@ on:
           - admin
           - both
 permissions:
-  contents: read
+  contents: write
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -40,21 +40,41 @@ jobs:
         run: |
           npm install
           mkdir -p www
-          cp index.html app.js styles.css manifest.webmanifest www/
+          cp index.html app.js app-update.js styles.css manifest.webmanifest www/
           cp -R assets www/assets
+          printf 'window.BC_APP_VERSION=%s;window.BC_APP_NAME="%s";\\n' "$GITHUB_RUN_NUMBER" "${{ matrix.app }}" > www/build-info.js
+          sed -i 's|<script src="app-update.js"></script>|<script src="build-info.js"></script><script src="app-update.js"></script>|' www/index.html
           npx cap add android
           npm install --no-save sharp
-          node -e "const sharp=require('sharp');const fs=require('fs');const path=require('path');const src='assets/butterfly-cafe-logo.svg';const base='android/app/src/main/res';(async()=>{for(const [folder,size] of [['mipmap-mdpi',48],['mipmap-hdpi',72],['mipmap-xhdpi',96],['mipmap-xxhdpi',144],['mipmap-xxxhdpi',192]]){const dir=path.join(base,folder);fs.mkdirSync(dir,{recursive:true});await sharp(src).resize(size,size).png().toFile(path.join(dir,'ic_launcher.png'));await sharp(src).resize(size,size).png().toFile(path.join(dir,'ic_launcher_round.png'));}})().catch(e=>{console.error(e);process.exit(1)})"
           npx cap sync android
-          # Replace Capacitor's default launcher assets after sync. Use the Butterfly Café logo
-          # for legacy launcher icons and remove default adaptive XML icons that override them.
+          sed -i -E "s/versionCode [0-9]+/versionCode $GITHUB_RUN_NUMBER/" android/app/build.gradle
+          sed -i -E "s/versionName \"[^\"]+\"/versionName \"1.0.$GITHUB_RUN_NUMBER\"/" android/app/build.gradle
+          # Use the Butterfly Café logo for Android launcher icons.
           node -e "const sharp=require('sharp');const fs=require('fs');const path=require('path');const src='assets/butterfly-cafe-logo.svg';const base='android/app/src/main/res';(async()=>{for(const [folder,size] of [['mipmap-mdpi',48],['mipmap-hdpi',72],['mipmap-xhdpi',96],['mipmap-xxhdpi',144],['mipmap-xxxhdpi',192]]){const dir=path.join(base,folder);fs.mkdirSync(dir,{recursive:true});await sharp(src).resize(size,size,{fit:'contain'}).png().toFile(path.join(dir,'ic_launcher.png'));await sharp(src).resize(size,size,{fit:'contain'}).png().toFile(path.join(dir,'ic_launcher_round.png'));}for(const file of ['android/app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml','android/app/src/main/res/mipmap-anydpi-v26/ic_launcher_round.xml']){if(fs.existsSync(file))fs.unlinkSync(file);}})().catch(e=>{console.error(e);process.exit(1)})"
       - name: Build APK
         working-directory: apps/${{ matrix.app }}/android
         run: |
           chmod +x gradlew
           ./gradlew assembleDebug
+          cp app/build/outputs/apk/debug/app-debug.apk app/build/outputs/apk/debug/butterfly-cafe-${{ matrix.app }}.apk
       - uses: actions/upload-artifact@v4
         with:
           name: butterfly-cafe-${{ matrix.app }}-apk
-          path: apps/${{ matrix.app }}/android/app/build/outputs/apk/debug/app-debug.apk
+          path: apps/${{ matrix.app }}/android/app/build/outputs/apk/debug/butterfly-cafe-${{ matrix.app }}.apk
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+      - name: Publish APKs as a GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG="v${GITHUB_RUN_NUMBER}"
+          gh release create "$TAG" \
+            artifacts/butterfly-cafe-customer-apk/butterfly-cafe-customer.apk \
+            artifacts/butterfly-cafe-admin-apk/butterfly-cafe-admin.apk \
+            --title "Butterfly Café ${TAG}" \
+            --notes "Nueva versión obligatoria de Butterfly Café y BC Admin. Incluye mejoras y correcciones de la aplicación. Abre la aplicación y pulsa ACTUALIZAR AHORA para instalarla."
