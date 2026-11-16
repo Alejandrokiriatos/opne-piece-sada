@@ -39,6 +39,9 @@ jobs:
         working-directory: apps/${{ matrix.app }}
         run: |
           npm install
+          mkdir -p www
+          cp index.html app.js styles.css manifest.webmanifest www/
+          cp -R assets www/assets
           npx cap add android
           npx cap sync android
       - name: Build APK
