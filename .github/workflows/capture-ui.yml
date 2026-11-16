@@ -1,0 +1,49 @@
+name: Capturas reales de Butterfly Cafe
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'apps/customer/**'
+      - 'apps/admin/**'
+      - 'data/**'
+      - '.github/workflows/capture-ui.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  screenshots:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install Playwright
+        run: |
+          npm init -y
+          npm install --save-dev playwright
+          npx playwright install --with-deps chromium
+      - name: Serve repository
+        run: |
+          python3 -m http.server 4173 --directory . > /tmp/butterfly-http.log 2>&1 &
+          for i in $(seq 1 30); do curl -fsS http://127.0.0.1:4173/apps/customer/ >/dev/null && break || sleep 1; done
+      - name: Capture customer and admin interfaces
+        run: |
+          node --input-type=module <<'NODE'
+          import { chromium } from 'playwright';
+          const browser = await chromium.launch({headless:true});
+          const page = await browser.newPage({viewport:{width:430,height:932},deviceScaleFactor:1});
+          page.on('pageerror', e => console.error('PAGE ERROR:', e.message));
+          await page.goto('http://127.0.0.1:4173/apps/customer/', {waitUntil:'networkidle'});
+          await page.screenshot({path:'butterfly-cafe-cliente.png',fullPage:true});
+          await page.goto('http://127.0.0.1:4173/apps/admin/', {waitUntil:'networkidle'});
+          await page.screenshot({path:'butterfly-cafe-admin.png',fullPage:true});
+          await browser.close();
+          NODE
+      - uses: actions/upload-artifact@v4
+        with:
+          name: butterfly-cafe-capturas-reales
+          path: |
+            butterfly-cafe-cliente.png
+            butterfly-cafe-admin.png
+          retention-days: 14
