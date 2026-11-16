@@ -80,18 +80,27 @@ jobs:
               ET.SubElement(app, "receiver", {ns + "name": receiver_name, ns + "exported": "false"})
           ET.indent(root, space="    ")
           ET.ElementTree(root).write(manifest, encoding="utf-8", xml_declaration=True)
-          main = Path("android/app/src/main/java") / package.replace(".", "/") / "MainActivity.java"
+          java_root = Path("android/app/src/main/java")
+          candidates = list(java_root.rglob("MainActivity.java"))
+          if len(candidates) != 1:
+              raise SystemExit(f"Expected exactly one MainActivity.java, found {len(candidates)}")
+          main = candidates[0]
           source = main.read_text()
           import_line = "import " + package + ".ApkInstallerPlugin;"
-          registration = "registerPlugin(ApkInstallerPlugin.class);"
           if import_line not in source:
-              source = source.replace("import com.getcapacitor.BridgeActivity;", "import com.getcapacitor.BridgeActivity;\n" + import_line)
+              source = source.replace("package " + package + ";", "package " + package + ";\n\n" + import_line, 1)
+          if "import android.os.Bundle;" not in source:
+              source = source.replace(import_line, import_line + "\nimport android.os.Bundle;", 1)
+          registration = "registerPlugin(ApkInstallerPlugin.class);"
           if registration not in source:
-              source = source.replace("super.onCreate(savedInstanceState);", registration + "\n        super.onCreate(savedInstanceState);")
+              if "public void onCreate(Bundle savedInstanceState)" in source:
+                  source = source.replace("super.onCreate(savedInstanceState);", registration + "\n        super.onCreate(savedInstanceState);", 1)
+              else:
+                  source = source.replace("extends BridgeActivity {", "extends BridgeActivity {\n    @Override\n    public void onCreate(Bundle savedInstanceState) {\n        " + registration + "\n        super.onCreate(savedInstanceState);\n    }\n", 1)
           if import_line not in source or registration not in source:
               raise SystemExit("ERROR: ApkInstallerPlugin could not be registered in MainActivity.java")
           main.write_text(source)
-          print("Verified native ApkInstallerPlugin registration in MainActivity.java.")
+          print("Verified native ApkInstallerPlugin registration in " + str(main))
           PY
           sed -i -E "s/versionCode [0-9]+/versionCode $GITHUB_RUN_NUMBER/" android/app/build.gradle
           sed -i -E "s/versionName \"[^\"]+\"/versionName \"1.0.$GITHUB_RUN_NUMBER\"/" android/app/build.gradle
