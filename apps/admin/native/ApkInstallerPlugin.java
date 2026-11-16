@@ -1,20 +1,18 @@
 package com.butterflycafe.admin;
 
-import android.app.PendingIntent;
+import android.content.ClipData;
 import android.content.Intent;
-import android.content.pm.PackageInstaller;
+import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Build;
 import android.provider.Settings;
-import android.widget.Toast;
+import androidx.core.content.FileProvider;
 import com.getcapacitor.JSObject;
 import com.getcapacitor.Plugin;
 import com.getcapacitor.PluginCall;
 import com.getcapacitor.PluginMethod;
 import com.getcapacitor.annotation.CapacitorPlugin;
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.OutputStream;
 
 @CapacitorPlugin(name = "ApkInstaller")
 public class ApkInstallerPlugin extends Plugin {
@@ -25,63 +23,62 @@ public class ApkInstallerPlugin extends Plugin {
             call.reject("Falta la ruta del APK");
             return;
         }
+
         try {
             Uri source = Uri.parse(value);
             String filePath = source.getPath();
             if (filePath == null) {
-                call.reject("La ruta del APK no es válida");
+                call.reject("La ruta del APK no es válida: " + value);
                 return;
             }
+
             File apk = new File(filePath);
-            if (!apk.isFile() || apk.length() == 0) {
-                call.reject("No se encontró un APK válido descargado");
+            if (!apk.isFile() || apk.length() <= 0) {
+                call.reject("El APK descargado no existe o está vacío: " + filePath);
                 return;
             }
-            if (Build.VERSION.SDK_INT >= 26 &&
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O &&
                 !getContext().getPackageManager().canRequestPackageInstalls()) {
                 Intent settings = new Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES,
                     Uri.parse("package:" + getContext().getPackageName()));
-                settings.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                getContext().startActivity(settings);
+                getActivity().startActivity(settings);
                 JSObject result = new JSObject();
                 result.put("needsPermission", true);
                 call.resolve(result);
                 return;
             }
 
-            PackageInstaller installer = getContext().getPackageManager().getPackageInstaller();
-            PackageInstaller.SessionParams params =
-                new PackageInstaller.SessionParams(PackageInstaller.SessionParams.MODE_FULL_INSTALL);
-            params.setSize(apk.length());
-            int sessionId = installer.createSession(params);
-            PackageInstaller.Session session = installer.openSession(sessionId);
-            try (FileInputStream input = new FileInputStream(apk);
-                 OutputStream output = session.openWrite("butterfly-cafe-update", 0, apk.length())) {
-                byte[] buffer = new byte[64 * 1024];
-                int count;
-                while ((count = input.read(buffer)) != -1) {
-                    output.write(buffer, 0, count);
-                }
-                session.fsync(output);
-            }
+            Uri apkUri = FileProvider.getUriForFile(
+                getContext(),
+                getContext().getPackageName() + ".fileprovider",
+                apk
+            );
 
-            Intent callback = new Intent(getContext(), ApkInstallStatusReceiver.class);
-            callback.setAction(getContext().getPackageName() + ".APK_INSTALL_STATUS");
-            int flags = PendingIntent.FLAG_UPDATE_CURRENT;
-            if (Build.VERSION.SDK_INT >= 31) flags |= PendingIntent.FLAG_MUTABLE;
-            PendingIntent statusIntent = PendingIntent.getBroadcast(
-                getContext(), sessionId, callback, flags);
-            session.commit(statusIntent.getIntentSender());
-            session.close();
+            Intent install = new Intent(Intent.ACTION_VIEW);
+            install.setDataAndType(apkUri, "application/vnd.android.package-archive");
+            install.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+            install.setClipData(ClipData.newUri(
+                getContext().getContentResolver(), "APK de actualización", apkUri));
+
+            if (install.resolveActivity(getContext().getPackageManager()) == null) {
+                // Android package installers can be hidden from package visibility.
+                // Launch directly; let Android report the actual failure if unavailable.
+            }
+            if (getActivity() == null) {
+                call.reject("No hay una pantalla activa para abrir el instalador de Android");
+                return;
+            }
+            getActivity().startActivity(install);
 
             JSObject result = new JSObject();
             result.put("needsPermission", false);
             result.put("installerOpened", true);
-            result.put("method", "PackageInstaller.Session");
+            result.put("method", "ACTION_VIEW/FileProvider");
             call.resolve(result);
         } catch (Exception error) {
             String detail = error.getClass().getSimpleName() + ": " + error.getMessage();
-            call.reject("PackageInstaller no pudo iniciar la instalación (" + detail + ")", error);
+            call.reject("No se pudo abrir el instalador Android (" + detail + ")", error);
         }
     }
 }
