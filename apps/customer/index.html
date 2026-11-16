@@ -1,13 +1,8 @@
-<!doctype html>
-<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#8c43a8"><link rel="manifest" href="manifest.webmanifest"><link rel="stylesheet" href="styles.css"><title>Butterfly Café</title></head>
-<body><div class="app-shell">
-<header class="top"><button class="menu" aria-label="Menú">☰</button><img class="brand-logo" src="assets/butterfly-cafe-logo.svg" alt="Butterfly Café"><div class="brand-copy"><span class="eyebrow">BIENVENIDA A</span><h1>Butterfly Café</h1><p>Un rincón dulce para ti ♡</p></div><button class="bell" aria-label="Novedades">♡</button></header>
-<div class="search"><span>⌕</span><input id="search" placeholder="¿Qué se te antoja hoy?"><button id="filter" aria-label="Filtros">☷</button></div>
-<section class="hero" id="hero"><div class="hero-copy"><span class="hero-kicker">HECHO CON AMOR</span><h2>Un momento<br><em>para disfrutar</em></h2><a href="#categories">Descubrir menú <b>→</b></a></div><span class="hero-butterfly">🦋</span></section>
-<div class="section-heading"><div><span class="eyebrow">ELIGE TU FAVORITO</span><h2>Nuestras categorías</h2></div><span class="heading-flower">✿</span></div>
-<section id="categories" class="categories"></section>
-<div class="section-title"><div><span class="eyebrow">RECIÉN PREPARADOS</span><h2>Los favoritos</h2></div><button id="all">Ver todos <b>→</b></button></div>
+<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#7e4294"><link rel="manifest" href="manifest.webmanifest"><link rel="stylesheet" href="styles.css"><title>Butterfly Café</title></head><body><div class="app-shell">
+<header class="top"><img class="brand-logo" src="assets/butterfly-cafe-logo.svg" alt="Butterfly Café"><div class="brand-copy"><span class="eyebrow">BIENVENIDA A</span><h1>Butterfly Café</h1><p>Un rincón dulce para ti ♡</p></div><span class="top-butterfly">🦋</span></header>
+<div class="search"><span>⌕</span><input id="search" placeholder="¿Qué se te antoja hoy?"></div>
+<section class="hero" id="hero"><div class="hero-copy"><span class="hero-kicker">HECHO CON AMOR</span><h2>Un momento<br><em>para disfrutar</em></h2><a href="#products">Descubrir menú <b>→</b></a></div></section>
+<div class="section-title"><div><span class="eyebrow" id="section-kicker">SELECCIÓN DE LA CASA</span><h2 id="section-heading">Cafés destacados</h2></div><button id="all">Ver todos <b>→</b></button></div>
 <section id="products" class="products"></section>
-<section id="promotions" class="promo-section"><div class="section-title"><div><span class="eyebrow">UN DETALLE PARA TI</span><h2>Promociones 💜</h2></div></div><div id="promo-list" class="promo-list"></div></section>
-<nav class="bottom" aria-label="Navegación principal"><a class="active" href="#"><span>⌂</span><small>Inicio</small></a><a href="#categories"><span>▦</span><small>Menú</small></a><a href="#promotions"><span>🎁</span><small>Ofertas</small></a><a href="#products"><span>♡</span><small>Favoritos</small></a></nav>
-<div id="toast" role="status"></div></div><script src="app.js"></script></body></html>
+<section id="promotions" class="promo-section"><div class="section-title"><div><span class="eyebrow">UN DETALLE PARA TI</span><h2>Dulces y eventos 💜</h2></div></div><div id="promo-list" class="promo-list"></div></section>
+<nav class="bottom" aria-label="Navegación principal"><button class="nav-item active" data-view="home"><span>⌂</span><small>Inicio</small></button><button class="nav-coffee" data-view="coffee"><span>☕</span><small>Café</small></button><button class="nav-item" data-view="sweets"><span>🧁</span><small>Dulces y eventos</small></button></nav><div id="toast" role="status"></div></div><script src="app.js"></script></body></html>
