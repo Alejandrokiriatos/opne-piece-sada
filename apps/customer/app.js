@@ -3,12 +3,12 @@ let catalog=null,view="home",showAll=false;const $=s=>document.querySelector(s);
 function money(n){return new Intl.NumberFormat("en-US",{style:"currency",currency:catalog?.currency||"USD"}).format(Number(n)||0)}
 function toast(t){const e=$("#toast");e.textContent=t;e.style.display="block";setTimeout(()=>e.style.display="none",2500)}
 function categoryName(id){return (catalog.categories||[]).find(c=>c.id===id)?.name||id||""}
-function typeOfProduct(p){const key=(String(p.category||"")+" "+categoryName(p.category)).toLowerCase();if(/evento|event/.test(key))return "event";if(/dulce|postre|pastel|repost|sweet|dessert|bakery|helado/.test(key))return "sweet";if(/cafe|café|coffee|espresso|frappe|frappé/.test(key))return "coffee";return "coffee"}
+function typeOfProduct(p){const key=(String(p.category||"")+" "+categoryName(p.category)+" "+(p.type||"")).toLowerCase();if(/evento|event/.test(key))return "event";if(/dulce|postre|pastel|repost|sweet|dessert|bakery|helado/.test(key))return "sweet";if(/cafe|café|coffee|espresso|frappe|frappé/.test(key))return "coffee";return "other"}
 function productCard(p){return '<article class="product"><img src="'+(p.image||"")+'" alt="'+p.name+'" loading="lazy"><h3>'+p.name+'</h3><p>'+(p.description||"")+'</p><div class="price">'+money(p.price)+'</div></article>'}
 function render(){if(!catalog)return;const q=$("#search").value.toLowerCase(),products=catalog.products.filter(p=>p.active!==false&&(p.name+" "+(p.description||"")).toLowerCase().includes(q));
 const pages=["products","event-feature","about-page"];pages.forEach(id=>$("#"+id).hidden=true);const closure=catalog.about?.closureAlert,now=new Date(),today=now.getFullYear()+"-"+String(now.getMonth()+1).padStart(2,"0")+"-"+String(now.getDate()).padStart(2,"0");const notice=$("#closure-notice");if(closure?.date===today&&closure.message){notice.hidden=false;notice.innerHTML="<b>⚠️ Aviso importante: hoy estamos cerrados</b><span>"+closure.message+"</span>"}else{notice.hidden=true;notice.textContent=""}$("#search-wrap").hidden=view==="events"||view==="about";$("#hero").hidden=view!=="home";
 let title="",kicker="",items=[];
-if(view==="home"){title="Cafés destacados";kicker="SELECCIÓN DE LA CASA";items=products.filter(p=>typeOfProduct(p)==="coffee");if(!showAll)items=items.slice(0,4)}
+if(view==="home"){title="Favoritos de la casa";kicker="CAFÉS Y DULCES DESTACADOS";items=products.filter(p=>(typeOfProduct(p)==="coffee"||typeOfProduct(p)==="sweet")&&(p.featured===true||p.bestSeller===true||p.mostOrdered===true));if(!showAll)items=items.slice(0,4)}
 else if(view==="coffee"){title="Todos nuestros cafés";kicker="NUESTRA CARTA DE CAFÉ";items=products.filter(p=>typeOfProduct(p)==="coffee")}
 else if(view==="sweets"){title="Todos nuestros dulces";kicker="ALGO DULCE PARA TI";items=products.filter(p=>typeOfProduct(p)==="sweet")}
 else if(view==="events"){title="Eventos";kicker="MOMENTOS ESPECIALES"}
