@@ -37,6 +37,51 @@ jobs:
           sed -i 's|<script src="app-update.js"></script>|<script src="build-info.js"></script><script src="app-update.bundle.js"></script>|' www/index.html
           npx cap add android
           npx cap sync android
+          # Add native APK installation so the app downloads in-place and opens Android's installer.
+          if [ "\${{ matrix.app }}" = "customer" ]; then PACKAGE="com.butterflycafe.app"; else PACKAGE="com.butterflycafe.admin"; fi
+          export PACKAGE
+          JAVA_DIR="android/app/src/main/java/\${PACKAGE//./\/}"
+          mkdir -p "$JAVA_DIR" android/app/src/main/res/xml
+          cp native/ApkInstallerPlugin.java "$JAVA_DIR/ApkInstallerPlugin.java"
+          cat > android/app/src/main/res/xml/bc_file_paths.xml <<'XML'
+          <?xml version="1.0" encoding="utf-8"?>
+          <paths xmlns:android="http://schemas.android.com/apk/res/android">
+              <cache-path name="cache" path="." />
+              <files-path name="files" path="." />
+          </paths>
+          XML
+          python3 - <<'PY'
+          from pathlib import Path
+          import os
+          import xml.etree.ElementTree as ET
+          package = os.environ["PACKAGE"]
+          ns = "{http://schemas.android.com/apk/res/android}"
+          ET.register_namespace("android", "http://schemas.android.com/apk/res/android")
+          manifest = Path("android/app/src/main/AndroidManifest.xml")
+          root = ET.parse(manifest).getroot()
+          if not any(p.get(ns + "name") == "android.permission.REQUEST_INSTALL_PACKAGES" for p in root.findall("uses-permission")):
+              ET.SubElement(root, "uses-permission", {ns + "name": "android.permission.REQUEST_INSTALL_PACKAGES"})
+          app = root.find("application")
+          authority = "\${applicationId}.fileprovider"
+          if not any(p.get(ns + "authorities") == authority for p in app.findall("provider")):
+              provider = ET.SubElement(app, "provider", {
+                  ns + "name": "androidx.core.content.FileProvider",
+                  ns + "authorities": authority,
+                  ns + "exported": "false",
+                  ns + "grantUriPermissions": "true"
+              })
+              ET.SubElement(provider, "meta-data", {
+                  ns + "name": "android.support.FILE_PROVIDER_PATHS",
+                  ns + "resource": "@xml/bc_file_paths"
+              })
+          ET.indent(root, space="    ")
+          ET.ElementTree(root).write(manifest, encoding="utf-8", xml_declaration=True)
+          main = Path("android/app/src/main/java") / package.replace(".", "/") / "MainActivity.java"
+          source = main.read_text()
+          source = source.replace("import com.getcapacitor.BridgeActivity;", "import com.getcapacitor.BridgeActivity;\\nimport " + package + ".ApkInstallerPlugin;")
+          source = source.replace("super.onCreate(savedInstanceState);", "registerPlugin(ApkInstallerPlugin.class);\\n        super.onCreate(savedInstanceState);")
+          main.write_text(source)
+          PY
           sed -i -E "s/versionCode [0-9]+/versionCode $GITHUB_RUN_NUMBER/" android/app/build.gradle
           sed -i -E "s/versionName \"[^\"]+\"/versionName \"1.0.$GITHUB_RUN_NUMBER\"/" android/app/build.gradle
           node -e "const sharp=require('sharp');const fs=require('fs');const path=require('path');const src='assets/butterfly-cafe-logo.svg';const base='android/app/src/main/res';(async()=>{for(const [folder,size] of [['mipmap-mdpi',48],['mipmap-hdpi',72],['mipmap-xhdpi',96],['mipmap-xxhdpi',144],['mipmap-xxxhdpi',192]]){const dir=path.join(base,folder);fs.mkdirSync(dir,{recursive:true});await sharp(src).resize(size,size,{fit:'contain'}).png().toFile(path.join(dir,'ic_launcher.png'));await sharp(src).resize(size,size,{fit:'contain'}).png().toFile(path.join(dir,'ic_launcher_round.png'));}for(const file of ['android/app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml','android/app/src/main/res/mipmap-anydpi-v26/ic_launcher_round.xml']){if(fs.existsSync(file))fs.unlinkSync(file);}})().catch(e=>{console.error(e);process.exit(1)})"
