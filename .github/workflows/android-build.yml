@@ -46,6 +46,9 @@ jobs:
           npm install --no-save sharp
           node -e "const sharp=require('sharp');const fs=require('fs');const path=require('path');const src='assets/butterfly-cafe-logo.svg';const base='android/app/src/main/res';(async()=>{for(const [folder,size] of [['mipmap-mdpi',48],['mipmap-hdpi',72],['mipmap-xhdpi',96],['mipmap-xxhdpi',144],['mipmap-xxxhdpi',192]]){const dir=path.join(base,folder);fs.mkdirSync(dir,{recursive:true});await sharp(src).resize(size,size).png().toFile(path.join(dir,'ic_launcher.png'));await sharp(src).resize(size,size).png().toFile(path.join(dir,'ic_launcher_round.png'));}})().catch(e=>{console.error(e);process.exit(1)})"
           npx cap sync android
+          # Replace Capacitor's default launcher assets after sync. Use the Butterfly Café logo
+          # for legacy launcher icons and remove default adaptive XML icons that override them.
+          node -e "const sharp=require('sharp');const fs=require('fs');const path=require('path');const src='assets/butterfly-cafe-logo.svg';const base='android/app/src/main/res';(async()=>{for(const [folder,size] of [['mipmap-mdpi',48],['mipmap-hdpi',72],['mipmap-xhdpi',96],['mipmap-xxhdpi',144],['mipmap-xxxhdpi',192]]){const dir=path.join(base,folder);fs.mkdirSync(dir,{recursive:true});await sharp(src).resize(size,size,{fit:'contain'}).png().toFile(path.join(dir,'ic_launcher.png'));await sharp(src).resize(size,size,{fit:'contain'}).png().toFile(path.join(dir,'ic_launcher_round.png'));}for(const file of ['android/app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml','android/app/src/main/res/mipmap-anydpi-v26/ic_launcher_round.xml']){if(fs.existsSync(file))fs.unlinkSync(file);}})().catch(e=>{console.error(e);process.exit(1)})"
       - name: Build APK
         working-directory: apps/${{ matrix.app }}/android
         run: |
