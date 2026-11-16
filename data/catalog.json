@@ -1,6 +1,6 @@
 {
-  "version": 10,
-  "updatedAt": "2026-11-16T20:35:52.452Z",
+  "version": 11,
+  "updatedAt": "2026-11-16T20:58:11.297Z",
   "cafeName": "Butterfly Café",
   "tagline": "Donde cada sorbo se siente especial ♡",
   "currency": "USD",
@@ -65,17 +65,6 @@
       "image": "https://images.unsplash.com/photo-1505252585461-04db1eb84625?auto=format&fit=crop&w=700&q=85",
       "active": true,
       "featured": false,
-      "bestSeller": false
-    },
-    {
-      "id": "item-1794854466256",
-      "name": "Jsjddjdj",
-      "description": "Hshsgs",
-      "price": 5,
-      "category": "cafes",
-      "image": "https://raw.githubusercontent.com/Alejandrokiriatos/opne-piece-sada/main/apps/customer/assets/products/item-1794854466256.png",
-      "active": true,
-      "featured": true,
       "bestSeller": false
     }
   ],
