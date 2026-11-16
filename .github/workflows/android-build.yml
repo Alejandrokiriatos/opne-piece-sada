@@ -86,6 +86,8 @@ jobs:
           PY
       - name: Build APK
         working-directory: apps/${{ matrix.app }}/android
+        env:
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
         run: |
           chmod +x gradlew
           ./gradlew assembleDebug
