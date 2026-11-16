@@ -1,5 +1,5 @@
 {
   "appId": "com.butterflycafe.admin",
   "appName": "Butterfly Café Admin",
-  "webDir": "."
+  "webDir": "www"
 }
