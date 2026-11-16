@@ -43,6 +43,7 @@ jobs:
           JAVA_DIR="android/app/src/main/java/${PACKAGE//./\/}"
           mkdir -p "$JAVA_DIR" android/app/src/main/res/xml
           cp native/ApkInstallerPlugin.java "$JAVA_DIR/ApkInstallerPlugin.java"
+          cp native/ApkInstallStatusReceiver.java "$JAVA_DIR/ApkInstallStatusReceiver.java"
           cat > android/app/src/main/res/xml/bc_file_paths.xml <<'XML'
           <?xml version="1.0" encoding="utf-8"?>
           <paths xmlns:android="http://schemas.android.com/apk/res/android">
@@ -74,6 +75,9 @@ jobs:
                   ns + "name": "android.support.FILE_PROVIDER_PATHS",
                   ns + "resource": "@xml/bc_file_paths"
               })
+          receiver_name = package + ".ApkInstallStatusReceiver"
+          if not any(r.get(ns + "name") == receiver_name for r in app.findall("receiver")):
+              ET.SubElement(app, "receiver", {ns + "name": receiver_name, ns + "exported": "false"})
           ET.indent(root, space="    ")
           ET.ElementTree(root).write(manifest, encoding="utf-8", xml_declaration=True)
           main = Path("android/app/src/main/java") / package.replace(".", "/") / "MainActivity.java"
