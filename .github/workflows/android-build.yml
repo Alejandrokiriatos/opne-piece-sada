@@ -85,9 +85,9 @@ jobs:
           import_line = "import " + package + ".ApkInstallerPlugin;"
           registration = "registerPlugin(ApkInstallerPlugin.class);"
           if import_line not in source:
-              source = source.replace("import com.getcapacitor.BridgeActivity;", "import com.getcapacitor.BridgeActivity;\\n" + import_line)
+              source = source.replace("import com.getcapacitor.BridgeActivity;", "import com.getcapacitor.BridgeActivity;\n" + import_line)
           if registration not in source:
-              source = source.replace("super.onCreate(savedInstanceState);", registration + "\\n        super.onCreate(savedInstanceState);")
+              source = source.replace("super.onCreate(savedInstanceState);", registration + "\n        super.onCreate(savedInstanceState);")
           if import_line not in source or registration not in source:
               raise SystemExit("ERROR: ApkInstallerPlugin could not be registered in MainActivity.java")
           main.write_text(source)
