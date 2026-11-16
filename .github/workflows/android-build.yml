@@ -14,7 +14,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        app: [customer]
+        app: [admin]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -32,6 +32,7 @@ jobs:
           mkdir -p www
           cp index.html app.js styles.css manifest.webmanifest www/
           npx esbuild app-update.js --bundle --format=iife --outfile=www/app-update.bundle.js
+          npx esbuild token-storage.js --bundle --format=iife --outfile=www/token-storage.bundle.js
           cp -R assets www/assets
           printf 'window.BC_APP_VERSION=%s;window.BC_APP_NAME="%s";\n' "$GITHUB_RUN_NUMBER" "${{ matrix.app }}" > www/build-info.js
           sed -i 's|<script src="app-update.js"></script>|<script src="build-info.js"></script><script src="app-update.bundle.js"></script>|' www/index.html
@@ -43,6 +44,7 @@ jobs:
           JAVA_DIR="android/app/src/main/java/${PACKAGE//./\/}"
           mkdir -p "$JAVA_DIR" android/app/src/main/res/xml
           cp native/ApkInstallerPlugin.java "$JAVA_DIR/ApkInstallerPlugin.java"
+          cp native/SecureTokenPlugin.java "$JAVA_DIR/SecureTokenPlugin.java"
           cp native/ApkInstallStatusReceiver.java "$JAVA_DIR/ApkInstallStatusReceiver.java"
           cat > android/app/src/main/res/xml/bc_file_paths.xml <<'XML'
           <?xml version="1.0" encoding="utf-8"?>
@@ -86,20 +88,23 @@ jobs:
               raise SystemExit(f"Expected exactly one MainActivity.java, found {len(candidates)}")
           main = candidates[0]
           source = main.read_text()
-          import_line = "import " + package + ".ApkInstallerPlugin;"
+          plugin_classes = ["ApkInstallerPlugin", "SecureTokenPlugin"]
           import re
-          if import_line not in source:
-              source = re.sub(r"(package\s+[\w.]+;)", lambda match: match.group(1) + "\n\n" + import_line, source, count=1)
+          imports = ["import " + package + "." + name + ";" for name in plugin_classes]
+          for import_line in imports:
+              if import_line not in source:
+                  source = re.sub(r"(package\s+[\w.]+;)", lambda match: match.group(1) + "\n\n" + import_line, source, count=1)
           if "import android.os.Bundle;" not in source:
-              source = source.replace(import_line, import_line + "\nimport android.os.Bundle;", 1)
-          registration = "registerPlugin(ApkInstallerPlugin.class);"
-          if registration not in source:
+              source = source.replace(imports[-1], imports[-1] + "\nimport android.os.Bundle;", 1)
+          registrations = ["registerPlugin(" + name + ".class);" for name in plugin_classes]
+          missing = [line for line in registrations if line not in source]
+          if missing:
               if "public void onCreate(Bundle savedInstanceState)" in source:
-                  source = source.replace("super.onCreate(savedInstanceState);", registration + "\n        super.onCreate(savedInstanceState);", 1)
+                  source = source.replace("super.onCreate(savedInstanceState);", "\n        ".join(missing) + "\n        super.onCreate(savedInstanceState);", 1)
               else:
-                  source = source.replace("extends BridgeActivity {", "extends BridgeActivity {\n    @Override\n    public void onCreate(Bundle savedInstanceState) {\n        " + registration + "\n        super.onCreate(savedInstanceState);\n    }\n", 1)
-          if import_line not in source or registration not in source:
-              raise SystemExit("ERROR: ApkInstallerPlugin could not be registered in MainActivity.java")
+                  source = source.replace("extends BridgeActivity {", "extends BridgeActivity {\n    @Override\n    public void onCreate(Bundle savedInstanceState) {\n        " + "\n        ".join(missing) + "\n        super.onCreate(savedInstanceState);\n    }\n", 1)
+          if any(line not in source for line in imports + registrations):
+              raise SystemExit("ERROR: Native plugins could not be registered in MainActivity.java")
           main.write_text(source)
           print("Verified native ApkInstallerPlugin registration in " + str(main))
           PY
@@ -170,12 +175,12 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           path: artifacts
-      - name: Publish Butterfly Café customer APK as a versioned release
+      - name: Publish BC Admin APK as a versioned release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           TAG="v${GITHUB_RUN_NUMBER}"
           gh release create "$TAG" \
-            artifacts/butterfly-cafe-customer-apk/butterfly-cafe-customer.apk \
-            --title "Butterfly Café ${TAG}" \
-            --notes "Actualización de la aplicación para clientes Butterfly Café v${GITHUB_RUN_NUMBER}. Eventos y Sobre nosotros muestran exclusivamente la información publicada en sus respectivas secciones. Abre Butterfly Café, espera el aviso de actualización, descarga y pulsa INSTALAR AHORA."
+            artifacts/butterfly-cafe-admin-apk/butterfly-cafe-admin.apk \
+            --title "BC Admin ${TAG}" \
+            --notes "Actualización de BC Admin v${GITHUB_RUN_NUMBER}. El token de GitHub se guarda cifrado en el almacenamiento privado del teléfono y se recupera tras actualizar la aplicación."
