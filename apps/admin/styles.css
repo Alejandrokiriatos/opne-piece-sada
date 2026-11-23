@@ -8,3 +8,18 @@
 
 /* Weekly hours editor */
 .weekly-hours-editor{display:grid!important;gap:0;margin:12px 0 18px;min-height:40px}.weekday-row{display:grid;grid-template-columns:minmax(82px,1.1fr) minmax(90px,1fr) minmax(90px,1fr) minmax(82px,.8fr);gap:10px;align-items:center;padding:12px 0;border-bottom:1px solid #f1e8f4}.weekday-row>b{grid-column:auto;font:bold 14px Georgia,serif}.weekday-row label{margin:0;font-size:10px;color:#795b84}.weekday-row .closed-check{grid-column:auto;display:flex;align-items:center;gap:6px;white-space:nowrap}.weekday-row input[type=time]{padding:9px 6px;font-size:12px}.weekday-row .closed-check input{width:auto;margin:0}@media(max-width:430px){.weekday-row{grid-template-columns:1fr 1fr;gap:7px}.weekday-row>b{grid-column:1/-1}.weekday-row .closed-check{grid-column:1/-1}.weekday-row label:not(.closed-check){min-width:0}}
+
+
+/* Gestión extendida de contenido para Butterfly Café */
+.admin-nav{grid-template-columns:repeat(4,minmax(0,1fr))}
+.admin-nav button{min-height:42px}
+.managed-list{display:grid;gap:8px;margin-top:15px}
+.managed-item{display:flex;align-items:center;gap:8px;padding:11px;border:1px solid #eee2f2;border-radius:13px;background:#fff}
+.managed-item>div{flex:1;min-width:0}
+.managed-item b{display:block;color:#522960;font: bold 13px Georgia,serif;overflow-wrap:anywhere}
+.managed-item small{display:block;color:#927e98;font-size:10px;margin-top:4px}
+.managed-item button{flex:0 0 auto;border:0;border-radius:9px;padding:8px 9px;background:#f0e2f6;color:#693580;font-size:10px;font-weight:800}
+.managed-item button:last-child{background:#fff0f3;color:#a12f55}
+.admin-page hr{border:0;border-top:1px solid #eee2f2;margin:22px 0}
+.admin-page h3{font:bold 17px Georgia,serif;color:#542765}
+@media(max-width:430px){.admin-nav{grid-template-columns:repeat(2,minmax(0,1fr))}.managed-item{flex-wrap:wrap}.managed-item>div{flex-basis:100%}}

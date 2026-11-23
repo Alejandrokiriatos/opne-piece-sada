@@ -1,15 +1,58 @@
-<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#7e4294"><link rel="manifest" href="manifest.webmanifest"><link rel="stylesheet" href="styles.css"><title>Butterfly Café</title></head><body><div class="app-shell">
-<header class="top"><img class="brand-logo" src="assets/butterfly-cafe-logo.svg" alt="Butterfly Café"><div class="brand-copy"><span class="eyebrow">BIENVENIDA A</span><h1>Butterfly Café</h1><p>Un rincón dulce para ti ♡</p></div><span class="top-butterfly">🦋</span></header>
-<div id="closure-notice" class="closure-notice" hidden role="alert"></div><div class="search" id="search-wrap"><span>⌕</span><input id="search" placeholder="¿Qué se te antoja hoy?"></div>
-<section class="hero" id="hero"><div class="hero-copy"><span class="hero-kicker">HECHO CON AMOR</span><h2>Un momento<br><em>para disfrutar</em></h2><a href="#products">Descubrir menú <b>→</b></a></div></section>
-<div class="section-title"><div><span class="eyebrow" id="section-kicker">SELECCIÓN DE LA CASA</span><h2 id="section-heading">Cafés destacados</h2></div><button id="all">Ver todos <b>→</b></button></div>
-<section id="products" class="products"></section>
-<section id="event-feature" class="content-page" hidden></section>
-<section id="about-page" class="content-page" hidden></section>
-<nav class="bottom" aria-label="Navegación principal">
-<button class="nav-item active" data-view="home"><span>⌂</span><small>Inicio</small></button>
-<button class="nav-item" data-view="sweets"><span>🧁</span><small>Dulces</small></button>
-<button class="nav-coffee" data-view="coffee"><span>☕</span><small>Café</small></button>
-<button class="nav-item" data-view="events"><span>🎉</span><small>Eventos</small></button>
-<button class="nav-item" data-view="about"><span>♡</span><small>Sobre nosotros</small></button>
-</nav><div id="toast" role="status"></div></div><script src="app-update.js"></script><script src="app.js"></script></body></html>
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#7e4294">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="stylesheet" href="styles.css">
+<title>Butterfly Café</title>
+</head>
+<body>
+<div class="app-shell">
+  <header class="top">
+    <img class="brand-logo" src="assets/butterfly-cafe-logo.svg" alt="Butterfly Café">
+    <div class="brand-copy">
+      <span class="eyebrow">BIENVENIDA A</span>
+      <h1>Butterfly Café</h1>
+      <p>Un rincón dulce para ti ♡</p>
+    </div>
+    <button class="notification-bell" type="button" data-notify-open aria-label="Notificaciones">🔔<i id="notification-count" hidden>0</i></button>
+    <span class="top-butterfly">🦋</span>
+  </header>
+
+  <div id="closure-notice" class="closure-notice" hidden role="alert"></div>
+  <div class="search" id="search-wrap"><span>⌕</span><input id="search" type="search" placeholder="¿Qué se te antoja hoy?" autocomplete="off"></div>
+  <section class="hero" id="hero"><div class="hero-copy"><span class="hero-kicker">HECHO CON AMOR</span><h2>Un momento<br><em>para disfrutar</em></h2><a href="#products">Descubrir menú <b>→</b></a></div></section>
+
+  <section id="promotions-section" class="home-extra" hidden>
+    <div class="section-title"><div><span class="eyebrow">OFERTAS ESPECIALES</span><h2>Promociones</h2></div><div class="carousel-controls"><button type="button" data-promo-prev aria-label="Anterior">‹</button><button type="button" data-promo-next aria-label="Siguiente">›</button></div></div>
+    <div id="promotions-list" class="promo-carousel"></div><div id="promo-dots" class="carousel-dots"></div>
+  </section>
+  <section id="news-section" class="home-extra" hidden>
+    <div class="section-title"><div><span class="eyebrow">DEL CAFÉ A TU DÍA</span><h2>Novedades</h2></div></div>
+    <div id="news-list" class="news-list"></div>
+  </section>
+
+  <div class="section-title" id="catalog-heading"><div><span class="eyebrow" id="section-kicker">SELECCIÓN DE LA CASA</span><h2 id="section-heading">Favoritos de la casa</h2></div><button id="all" type="button">Ver todos <b>→</b></button></div>
+  <div id="category-filters" class="category-filters" hidden></div>
+  <section id="products" class="products"></section>
+  <section id="event-feature" class="content-page" hidden></section>
+  <section id="about-page" class="content-page" hidden></section>
+  <section id="notifications-page" class="content-page" hidden></section>
+
+  <nav class="bottom" aria-label="Navegación principal">
+    <button class="nav-item active" data-view="home"><span>⌂</span><small>Inicio</small></button>
+    <button class="nav-item" data-view="sweets"><span>🧁</span><small>Dulces</small></button>
+    <button class="nav-coffee" data-view="coffee"><span>☕</span><small>Café</small></button>
+    <button class="nav-item" data-view="events"><span>🎉</span><small>Eventos</small></button>
+    <button class="nav-item" data-view="about"><span>♡</span><small>Sobre nosotros</small></button>
+  </nav>
+  <dialog id="product-dialog" class="detail-dialog"><div id="product-detail"></div><button class="dialog-close" type="button" data-close-dialog>Cerrar</button></dialog>
+  <dialog id="image-dialog" class="image-dialog"><button class="image-close" type="button" data-close-dialog aria-label="Cerrar">×</button><img id="expanded-image" alt="Fotografía ampliada"></dialog>
+  <div id="toast" role="status"></div>
+</div>
+<script src="app-update.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

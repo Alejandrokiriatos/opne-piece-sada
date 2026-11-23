@@ -6,6 +6,12 @@ on:
       - 'apps/customer/**'
       - 'apps/admin/**'
       - '.github/workflows/android-build.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'apps/customer/**'
+      - 'apps/admin/**'
+      - '.github/workflows/android-build.yml'
 permissions:
   contents: write
 jobs:
@@ -14,7 +20,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        app: [admin]
+        app: [customer, admin]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -168,6 +174,7 @@ jobs:
           name: butterfly-cafe-${{ matrix.app }}-apk
           path: apps/${{ matrix.app }}/android/app/build/outputs/apk/debug/butterfly-cafe-${{ matrix.app }}.apk
   release:
+    if: github.event_name == 'push'
     needs: build
     runs-on: ubuntu-latest
     steps:
@@ -175,12 +182,13 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           path: artifacts
-      - name: Publish BC Admin APK as a versioned release
+      - name: Publish both Butterfly Café APKs as one versioned release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           TAG="v${GITHUB_RUN_NUMBER}"
           gh release create "$TAG" \
+            artifacts/butterfly-cafe-customer-apk/butterfly-cafe-customer.apk \
             artifacts/butterfly-cafe-admin-apk/butterfly-cafe-admin.apk \
-            --title "BC Admin ${TAG}" \
-            --notes "Corrección de conexión de GitHub y guardado seguro del token en BC Admin."
+            --title "Butterfly Café ${TAG}" \
+            --notes "Compilación conjunta de Butterfly Café y BC Admin."
