@@ -59,12 +59,13 @@
       $("#cart-clear").hidden = true;
       return;
     }
-    $("#checkout-form").hidden = data.lines.length === 0;
+    const orderEnabled = catalog()?.orders?.enabled === true && Boolean(window.BCApp?.getBackendApiBase?.());
+    $("#checkout-form").hidden = data.lines.length === 0 || !orderEnabled;
     $("#cart-clear").hidden = data.lines.length === 0;
     content.innerHTML = data.lines.length ? '<div class="cart-lines">' + data.lines.map(line => {
       const p = line.product;
       return '<article class="cart-line"><div class="cart-line-main"><b>' + safeText(p.name) + '</b><small>' + formatMoney(p.price) + ' cada uno</small><strong>' + formatMoney((Number(p.price) || 0) * line.quantity) + '</strong></div><div class="cart-line-controls"><button type="button" data-cart-decrease="' + safeText(p.id) + '" aria-label="Quitar uno">−</button><span>' + line.quantity + '</span><button type="button" data-cart-increase="' + safeText(p.id) + '" aria-label="Añadir uno">＋</button><button type="button" data-cart-remove="' + safeText(p.id) + '" class="cart-remove">Quitar</button></div></article>';
-    }).join("") + '</div><div class="cart-total-line"><span>Total estimado</span><b>' + formatMoney(data.total) + '</b></div>' : '<div class="empty cart-empty">Tu pedido está vacío. Añade un café o un dulce del menú. 💜</div>';
+    }).join("") + '</div><div class="cart-total-line"><span>Total estimado</span><b>' + formatMoney(data.total) + '</b></div>' + (!orderEnabled ? '<div class="order-disabled">La cafetería todavía no ha activado la recepción de pedidos. Puedes seguir explorando el menú.</div>' : '') : '<div class="empty cart-empty">Tu pedido está vacío. Añade un café o un dulce del menú. 💜</div>';
   }
   function mutate(productId, amount) {
     const product = productMap().get(productId);
@@ -101,6 +102,10 @@
     const c = catalog();
     const apiBase = window.BCApp?.getBackendApiBase?.() || "";
     const data = totals();
+    if (c?.orders?.enabled !== true) {
+      setStatus("La cafetería todavía no ha activado la recepción de pedidos.", true);
+      return;
+    }
     if (!data.lines.length) { setStatus("Añade al menos un producto.", true); return; }
     if (!apiBase) {
       setStatus("Los pedidos todavía no están habilitados. BC Admin debe configurar la dirección del servidor.", true);
