@@ -30,3 +30,11 @@
 
 .event-gallery{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;margin-top:12px}.event-gallery button{border:0;padding:0;background:#f3e7f7;border-radius:10px;overflow:hidden}.event-gallery img{display:block;width:100%;height:82px;object-fit:cover}
 #catalog-heading[hidden]{display:none}
+
+
+/* Layout correction validated with mobile screenshot */
+#products.home-groups{display:block}
+#products.home-groups>.product-group{display:block;width:100%;margin:0 0 22px}
+#products.home-groups>.product-group>.products{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.product .product-image-button{display:block!important;width:100%!important;margin:0!important;padding:0!important;border:0!important;border-radius:0!important;background:transparent!important;box-shadow:none!important}
+.product .product-open{display:block!important;width:100%!important;margin:0!important;padding:0!important;border:0!important;border-radius:0!important;background:transparent!important;box-shadow:none!important;color:#482052!important;text-align:left!important}
