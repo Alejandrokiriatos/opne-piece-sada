@@ -49,6 +49,8 @@ jobs:
           await page.locator('#cart-open').click();
           await page.locator('#cart-dialog[open]').waitFor();
           if (!(await page.locator('#cart-content').innerText()).includes('Cappuccino')) throw new Error('Customer cart did not show the selected product.');
+          if (!(await page.locator('#cart-content').innerText()).includes('todavía no ha activado')) throw new Error('Customer orders should remain disabled until the owner approves the catalogue.');
+          if (!(await page.locator('#checkout-form').isHidden())) throw new Error('Checkout must stay hidden until customer order intake is enabled.');
           await page.locator('#cart-clear').click();
           await page.locator('[data-cart-close]').click();
           await page.screenshot({path:'butterfly-cafe-cliente.png',fullPage:true});
@@ -132,6 +134,8 @@ jobs:
             return route.fulfill({status:404,contentType:'application/json',body:'{"error":"Not found"}'});
           });
           await page.locator('[data-admin-tab="orders"]').click();
+          if (await page.locator('#orders-enabled').isChecked()) throw new Error('Order intake must start disabled until the owner approves catalogue prices.');
+          await page.locator('#orders-enabled').check();
           await page.locator('.order-card').waitFor();
           if (!(await page.locator('#orders-list').innerText()).includes('Cliente Playwright')) throw new Error('Admin did not render the test order.');
           await page.locator('[data-order-status]').selectOption('ready');
