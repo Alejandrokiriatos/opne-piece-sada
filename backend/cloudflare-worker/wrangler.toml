@@ -1,0 +1,17 @@
+name = "butterfly-cafe-api"
+main = "src/index.js"
+compatibility_date = "2026-11-23"
+workers_dev = true
+
+[observability]
+enabled = true
+
+[vars]
+CATALOG_URL = "https://raw.githubusercontent.com/Alejandrokiriatos/opne-piece-sada/main/data/catalog.json"
+CORS_ORIGINS = "https://alejandrokiriatos.github.io,https://localhost,http://localhost,capacitor://localhost"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "butterfly-cafe-db"
+database_id = "00000000-0000-0000-0000-000000000001"
+migrations_dir = "migrations"
