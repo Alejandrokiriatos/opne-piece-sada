@@ -93,7 +93,7 @@ jobs:
           if (!(await page.locator('#push-config-status').innerText()).includes('Configuración introducida')) throw new Error('Push configuration readiness did not update.');
 
           // Verify optimistic concurrency: a changed catalog SHA must block the write.
-          let catalogReads = 0, putRequests = 0;
+          let mode = 'conflict', catalogReads = 0, putRequests = 0, mediaPutRequests = 0, catalogPutRequests = 0, publishedCatalog = null;
           const { readFile } = await import('node:fs/promises');
           const catalogBase64 = (await readFile('data/catalog.json')).toString('base64');
           await page.route('https://api.github.com/**', async route => {
@@ -101,10 +101,26 @@ jobs:
             if (url.pathname === '/user') return route.fulfill({status:200,contentType:'application/json',body:'{"login":"playwright"}'});
             if (url.pathname.endsWith('/contents/data/catalog.json') && request.method() === 'GET') {
               catalogReads++;
-              return route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({sha:catalogReads===1?'sha-loaded':'sha-changed-remotely',content:catalogBase64})});
+              const sha = mode === 'conflict' ? (catalogReads === 1 ? 'sha-loaded' : 'sha-changed-remotely') : 'sha-stable';
+              return route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({sha,content:catalogBase64})});
             }
-            if (request.method() === 'PUT') putRequests++;
-            return route.fulfill({status:404,contentType:'application/json',body:'{"message":"Not found"}'});
+            if (request.method() === 'GET' && url.pathname.includes('/contents/apps/customer/assets/media/')) {
+              return route.fulfill({status:404,contentType:'application/json',body:'{"message":"Not Found"}'});
+            }
+            if (request.method() === 'PUT') {
+              putRequests++;
+              const body = request.postDataJSON();
+              if (url.pathname.endsWith('/contents/data/catalog.json')) {
+                catalogPutRequests++;
+                publishedCatalog = JSON.parse(Buffer.from(body.content,'base64').toString('utf8'));
+                return route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({content:{sha:'sha-published'},commit:{sha:'catalog-commit',html_url:'https://github.com/Alejandrokiriatos/opne-piece-sada/commit/catalog-commit'}})});
+              }
+              if (url.pathname.includes('/contents/apps/customer/assets/media/')) {
+                mediaPutRequests++;
+                return route.fulfill({status:201,contentType:'application/json',body:JSON.stringify({content:{sha:'media-blob-'+mediaPutRequests},commit:{sha:'media-commit-'+mediaPutRequests}})});
+              }
+            }
+            return route.fulfill({status:404,contentType:'application/json',body:'{"message":"Not Found"}'});
           });
           page.on('dialog', dialog => dialog.accept());
           await page.locator('.settings summary').click();
@@ -120,6 +136,41 @@ jobs:
           await page.waitForFunction(() => document.querySelector('#status')?.textContent.includes('Conflicto de publicación'));
           if (putRequests !== 0) throw new Error('BC Admin attempted to overwrite the catalog after a SHA conflict.');
           if (catalogReads < 2) throw new Error('The concurrent catalog version was not checked before publication.');
+
+          // Now simulate a successful publication to verify new file uploads and the publication audit entry.
+          mode = 'success';
+          catalogReads = 0; putRequests = 0; mediaPutRequests = 0; catalogPutRequests = 0; publishedCatalog = null;
+          await page.reload({waitUntil:'networkidle'});
+          await page.waitForFunction(() => document.querySelector('#metric-products')?.textContent === '4');
+          await page.locator('.settings summary').click();
+          await page.locator('#token').fill('playwright-test-token');
+          await page.locator('#connect').click();
+          await page.waitForFunction(() => document.querySelector('#status')?.textContent.includes('Conexión correcta'));
+
+          await page.locator('[data-admin-tab="promotions"]').click();
+          await page.locator('#promo-title').fill('Published image test');
+          await page.locator('#promo-desc').fill('Uploaded directly from BC Admin.');
+          await page.locator('#promo-image-file').setInputFiles({name:'promo-success.svg',mimeType:'image/svg+xml',buffer:svg});
+          await page.locator('#promo-image-preview img').waitFor();
+          await page.locator('#add-promo').click();
+
+          await page.locator('[data-admin-tab="events"]').click();
+          await page.locator('#event-image-file').setInputFiles({name:'event-cover.svg',mimeType:'image/svg+xml',buffer:svg});
+          await page.locator('#event-gallery-files').setInputFiles([
+            {name:'gallery-one.svg',mimeType:'image/svg+xml',buffer:svg},
+            {name:'gallery-two.svg',mimeType:'image/svg+xml',buffer:svg}
+          ]);
+          await page.locator('#event-gallery-preview img').first().waitFor();
+
+          await page.locator('#publish').click();
+          await page.locator('#accept-publish').click();
+          await page.waitForFunction(() => document.querySelector('#status')?.textContent.includes('¡Publicado!'));
+          if (catalogReads < 2 || catalogPutRequests !== 1 || mediaPutRequests !== 4) throw new Error('Expected one catalog write and four media uploads; got reads='+catalogReads+', catalog PUTs='+catalogPutRequests+', media PUTs='+mediaPutRequests+'.');
+          if (!publishedCatalog?.promotions?.some(p => p.title === 'Published image test' && p.image.includes('/assets/media/'))) throw new Error('The published promotion does not reference its uploaded image.');
+          if (!publishedCatalog?.event?.image?.includes('/assets/media/') || (publishedCatalog.event.images||[]).length < 2) throw new Error('The current event cover/gallery did not publish its uploaded images.');
+          if (!(publishedCatalog.publicationHistory||[]).length) throw new Error('The publication history entry was not saved.');
+          await page.locator('[data-admin-tab="history"]').click();
+          if (!(await page.locator('#publication-history-list').innerText()).includes('Publicación')) throw new Error('The publication history entry did not render in BC Admin.');
 
           if (pageErrors.length) throw new Error('Browser page errors: ' + pageErrors.join(' | '));
           await browser.close();
