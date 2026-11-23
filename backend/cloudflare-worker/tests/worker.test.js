@@ -77,3 +77,27 @@ test("push config exposes only public capability information", async () => {
   assert.equal(body.nativePushAvailable, false);
   assert.equal(Object.hasOwn(body, "privateKey"), false);
 });
+
+test("refuses to accept a valid cart while orders are disabled in the published catalogue", async () => {
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async () => new Response(JSON.stringify({
+    currency: "USD", orders: { enabled: false }, products: [
+      { id: "cappuccino", name: "Cappuccino", price: 5, active: true, available: true }
+    ]
+  }), { status: 200, headers: { "Content-Type": "application/json" } });
+  try {
+    const response = await worker.fetch(new Request("https://api.example.test/api/orders", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Idempotency-Key": "disabled-order-test-12345" },
+      body: JSON.stringify({
+        customerName: "Cliente Test", customerPhone: "+15555550100",
+        items: [{ productId: "cappuccino", quantity: 1 }]
+      })
+    }), env({ CATALOG_URL: "https://catalog.example.test/catalog.json" }));
+    assert.equal(response.status, 503);
+    const body = await response.json();
+    assert.match(body.error, /todavía no está habilitada/i);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
