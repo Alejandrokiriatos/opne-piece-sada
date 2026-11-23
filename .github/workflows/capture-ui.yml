@@ -111,6 +111,7 @@ jobs:
           await page.locator('#token').fill('playwright-test-token');
           await page.locator('#connect').click();
           await page.waitForFunction(() => document.querySelector('#status')?.textContent.includes('Conexión correcta'));
+          await page.locator('[data-admin-tab="news"]').click();
           await page.locator('#news-title').fill('Concurrent publication test');
           await page.locator('#news-desc').fill('Must not overwrite another admin.');
           await page.locator('#add-news').click();
