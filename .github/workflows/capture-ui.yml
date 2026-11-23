@@ -73,6 +73,105 @@ jobs:
           await page.locator('#add-notice').click();
           if (!(await page.locator('#notice-admin-list').innerText()).includes('Playwright test notice')) throw new Error('Admin announcement creation failed.');
 
+          // Direct image upload and compressed media preview; do not publish this test draft.
+          await page.locator('[data-admin-tab="promotions"]').click();
+          await page.locator('#promo-title').fill('Playwright photo promotion');
+          await page.locator('#promo-desc').fill('Image upload smoke test');
+          const svg = Buffer.from('<svg xmlns="http://www.w3.org/2000/svg" width="8" height="8"><rect width="8" height="8" fill="#7e4294"/></svg>');
+          await page.locator('#promo-image-file').setInputFiles({name:'promo.svg',mimeType:'image/svg+xml',buffer:svg});
+          await page.locator('#promo-image-preview img').waitFor();
+          await page.locator('#add-promo').click();
+          if (!(await page.locator('#promo-admin-list').innerText()).includes('Playwright photo promotion')) throw new Error('Admin promotion media staging failed.');
+          if (!(await page.locator('#promo-admin-list img.managed-thumb').count())) throw new Error('The uploaded promotion image preview was not shown.');
+
+          // Verify the publication history and push setup pages are accessible.
+          await page.locator('[data-admin-tab="history"]').click();
+          if (!(await page.locator('#publication-history-list').innerText()).includes('Todavía no hay publicaciones')) throw new Error('Publication history screen did not render its empty state.');
+          await page.locator('[data-admin-tab="push"]').click();
+          await page.locator('#push-public-key').fill('BTEST_PUBLIC_VAPID_KEY');
+          await page.locator('#push-endpoint').fill('https://push.example.test/subscriptions');
+          if (!(await page.locator('#push-config-status').innerText()).includes('Configuración introducida')) throw new Error('Push configuration readiness did not update.');
+
+          // Verify optimistic concurrency: a changed catalog SHA must block the write.
+          let mode = 'conflict', catalogReads = 0, putRequests = 0, mediaPutRequests = 0, catalogPutRequests = 0, publishedCatalog = null;
+          const { readFile } = await import('node:fs/promises');
+          const catalogBase64 = (await readFile('data/catalog.json')).toString('base64');
+          await page.route('https://api.github.com/**', async route => {
+            const request = route.request(), url = new URL(request.url());
+            if (url.pathname === '/user') return route.fulfill({status:200,contentType:'application/json',body:'{"login":"playwright"}'});
+            if (url.pathname.endsWith('/contents/data/catalog.json') && request.method() === 'GET') {
+              catalogReads++;
+              const sha = mode === 'conflict' ? (catalogReads === 1 ? 'sha-loaded' : 'sha-changed-remotely') : 'sha-stable';
+              return route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({sha,content:catalogBase64})});
+            }
+            if (request.method() === 'GET' && url.pathname.includes('/contents/apps/customer/assets/media/')) {
+              return route.fulfill({status:404,contentType:'application/json',body:'{"message":"Not Found"}'});
+            }
+            if (request.method() === 'PUT') {
+              putRequests++;
+              const body = request.postDataJSON();
+              if (url.pathname.endsWith('/contents/data/catalog.json')) {
+                catalogPutRequests++;
+                publishedCatalog = JSON.parse(Buffer.from(body.content,'base64').toString('utf8'));
+                return route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({content:{sha:'sha-published'},commit:{sha:'catalog-commit',html_url:'https://github.com/Alejandrokiriatos/opne-piece-sada/commit/catalog-commit'}})});
+              }
+              if (url.pathname.includes('/contents/apps/customer/assets/media/')) {
+                mediaPutRequests++;
+                return route.fulfill({status:201,contentType:'application/json',body:JSON.stringify({content:{sha:'media-blob-'+mediaPutRequests},commit:{sha:'media-commit-'+mediaPutRequests}})});
+              }
+            }
+            return route.fulfill({status:404,contentType:'application/json',body:'{"message":"Not Found"}'});
+          });
+          page.on('dialog', dialog => dialog.accept());
+          await page.locator('.settings summary').click();
+          await page.locator('#token').fill('playwright-test-token');
+          await page.locator('#connect').click();
+          await page.waitForFunction(() => document.querySelector('#status')?.textContent.includes('Conexión correcta'));
+          await page.locator('[data-admin-tab="news"]').click();
+          await page.locator('#news-title').fill('Concurrent publication test');
+          await page.locator('#news-desc').fill('Must not overwrite another admin.');
+          await page.locator('#add-news').click();
+          await page.locator('#publish').click();
+          await page.locator('#accept-publish').click();
+          await page.waitForFunction(() => document.querySelector('#status')?.textContent.includes('Conflicto de publicación'));
+          if (putRequests !== 0) throw new Error('BC Admin attempted to overwrite the catalog after a SHA conflict.');
+          if (catalogReads < 2) throw new Error('The concurrent catalog version was not checked before publication.');
+
+          // Now simulate a successful publication to verify new file uploads and the publication audit entry.
+          mode = 'success';
+          catalogReads = 0; putRequests = 0; mediaPutRequests = 0; catalogPutRequests = 0; publishedCatalog = null;
+          await page.reload({waitUntil:'networkidle'});
+          await page.waitForFunction(() => document.querySelector('#metric-products')?.textContent === '4');
+          await page.locator('.settings summary').click();
+          await page.locator('#token').fill('playwright-test-token');
+          await page.locator('#connect').click();
+          await page.waitForFunction(() => document.querySelector('#status')?.textContent.includes('Conexión correcta'));
+
+          await page.locator('[data-admin-tab="promotions"]').click();
+          await page.locator('#promo-title').fill('Published image test');
+          await page.locator('#promo-desc').fill('Uploaded directly from BC Admin.');
+          await page.locator('#promo-image-file').setInputFiles({name:'promo-success.svg',mimeType:'image/svg+xml',buffer:svg});
+          await page.locator('#promo-image-preview img').waitFor();
+          await page.locator('#add-promo').click();
+
+          await page.locator('[data-admin-tab="events"]').click();
+          await page.locator('#event-image-file').setInputFiles({name:'event-cover.svg',mimeType:'image/svg+xml',buffer:svg});
+          await page.locator('#event-gallery-files').setInputFiles([
+            {name:'gallery-one.svg',mimeType:'image/svg+xml',buffer:svg},
+            {name:'gallery-two.svg',mimeType:'image/svg+xml',buffer:svg}
+          ]);
+          await page.locator('#event-gallery-preview img').first().waitFor();
+
+          await page.locator('#publish').click();
+          await page.locator('#accept-publish').click();
+          await page.waitForFunction(() => document.querySelector('#status')?.textContent.includes('¡Publicado!'));
+          if (catalogReads < 2 || catalogPutRequests !== 1 || mediaPutRequests !== 4) throw new Error('Expected one catalog write and four media uploads; got reads='+catalogReads+', catalog PUTs='+catalogPutRequests+', media PUTs='+mediaPutRequests+'.');
+          if (!publishedCatalog?.promotions?.some(p => p.title === 'Published image test' && p.image.includes('/assets/media/'))) throw new Error('The published promotion does not reference its uploaded image.');
+          if (!publishedCatalog?.event?.image?.includes('/assets/media/') || (publishedCatalog.event.images||[]).length < 2) throw new Error('The current event cover/gallery did not publish its uploaded images.');
+          if (!(publishedCatalog.publicationHistory||[]).length) throw new Error('The publication history entry was not saved.');
+          await page.locator('[data-admin-tab="history"]').click();
+          if (!(await page.locator('#publication-history-list').innerText()).includes('Publicación')) throw new Error('The publication history entry did not render in BC Admin.');
+
           if (pageErrors.length) throw new Error('Browser page errors: ' + pageErrors.join(' | '));
           await browser.close();
           NODE

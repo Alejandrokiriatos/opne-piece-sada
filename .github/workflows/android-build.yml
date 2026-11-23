@@ -37,6 +37,7 @@ jobs:
           npm install --no-save sharp esbuild
           mkdir -p www
           cp index.html app.js styles.css manifest.webmanifest www/
+          if [ -f service-worker.js ]; then cp service-worker.js www/; fi
           npx esbuild app-update.js --bundle --format=iife --outfile=www/app-update.bundle.js
           if [ "${{ matrix.app }}" = "admin" ]; then npx esbuild token-storage.js --bundle --format=iife --outfile=www/token-storage.bundle.js; fi
           cp -R assets www/assets

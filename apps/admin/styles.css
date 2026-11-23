@@ -63,3 +63,20 @@
 
 /* Keep the publish controls in the document flow so they never cover dashboard metrics. */
 .publish-dock{position:relative;bottom:auto;margin:16px 0 18px}
+
+
+/* Direct media uploads and publication audit */
+.media-preview{display:flex;flex-wrap:wrap;gap:8px;margin:7px 0 12px;min-height:6px}
+.media-preview:empty{display:none}
+.media-preview img{width:72px;height:72px;object-fit:cover;border:1px solid #eadcf0;border-radius:12px;background:#f6eff8}
+.media-preview span{align-self:center;max-width:140px;color:#876d91;font-size:10px;overflow-wrap:anywhere}
+.managed-thumb{width:56px;height:56px;flex:0 0 56px;object-fit:cover;border-radius:11px;border:1px solid #eadcf0;background:#f6eff8}
+.publication-entry{padding:13px;border:1px solid #eadcf0;border-radius:15px;background:#fff}
+.publication-entry-head{display:flex;justify-content:space-between;align-items:center;gap:9px;flex-wrap:wrap}
+.publication-entry-head b{font:bold 14px Georgia,serif;color:#552568}
+.publication-entry-head small{font-size:10px;color:#927e98}
+.publication-entry ul{margin:8px 0 0;padding-left:20px;font-size:11px;line-height:1.55;color:#765783}
+.publication-entry a{display:inline-block;margin-top:8px;font-size:10px;font-weight:800;color:#7e4294}
+.push-readiness{padding:13px 15px;border:1px solid #eadcf0;border-radius:14px;background:#fbf7fc;color:#79518a;margin:15px 0}
+.push-readiness b{font-size:12px}
+.push-readiness ol{padding-left:20px;font-size:11px;line-height:1.65}
