@@ -151,7 +151,7 @@ async function createOrder(request, env) {
   }
 
   const id = uuid();
-  const datePart = nowIso().slice(2, 10).replaceAll("-", "");
+  const datePart = nowIso().slice(0, 10).replaceAll("-", "").slice(2);
   const suffix = crypto.getRandomValues(new Uint8Array(3));
   const orderNumber = "BC-" + datePart + "-" + Array.from(suffix, b => b.toString(16).padStart(2, "0")).join("").toUpperCase();
   const createdAt = nowIso();
@@ -243,12 +243,13 @@ async function getSalesStats(request, env) {
   const end = new Date(new Date(to + "T00:00:00.000Z").getTime() + 86400_000).toISOString();
   const totals = await env.DB.prepare("SELECT COUNT(*) AS order_count, SUM(CASE WHEN payment_status = 'paid' AND order_status != 'cancelled' THEN 1 ELSE 0 END) AS paid_order_count, COALESCE(SUM(CASE WHEN payment_status = 'paid' AND order_status != 'cancelled' THEN subtotal_cents ELSE 0 END), 0) AS revenue_cents, SUM(CASE WHEN payment_status = 'unpaid' AND order_status != 'cancelled' THEN 1 ELSE 0 END) AS unpaid_order_count, SUM(CASE WHEN order_status = 'completed' THEN 1 ELSE 0 END) AS completed_order_count FROM orders WHERE created_at >= ? AND created_at < ?")
     .bind(start, end).first();
+  const currencyRow = await env.DB.prepare("SELECT currency FROM orders WHERE created_at >= ? AND created_at < ? AND payment_status = 'paid' AND order_status != 'cancelled' ORDER BY created_at DESC LIMIT 1").bind(start, end).first();
   const topProducts = await env.DB.prepare("SELECT oi.product_id, oi.product_name, SUM(oi.quantity) AS units_sold, SUM(oi.line_total_cents) AS revenue_cents FROM order_items oi JOIN orders o ON o.id = oi.order_id WHERE o.created_at >= ? AND o.created_at < ? AND o.payment_status = 'paid' AND o.order_status != 'cancelled' GROUP BY oi.product_id, oi.product_name ORDER BY units_sold DESC LIMIT 10")
     .bind(start, end).all();
   const daily = await env.DB.prepare("SELECT substr(created_at,1,10) AS day, COUNT(*) AS paid_orders, COALESCE(SUM(subtotal_cents),0) AS revenue_cents FROM orders WHERE created_at >= ? AND created_at < ? AND payment_status = 'paid' AND order_status != 'cancelled' GROUP BY substr(created_at,1,10) ORDER BY day ASC")
     .bind(start, end).all();
   return asJson({
-    from, to, currency: "USD",
+    from, to, currency: currencyRow?.currency || "USD",
     orderCount: Number(totals?.order_count || 0),
     paidOrderCount: Number(totals?.paid_order_count || 0),
     unpaidOrderCount: Number(totals?.unpaid_order_count || 0),
