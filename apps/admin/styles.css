@@ -59,3 +59,7 @@
 .preview-event{background:#fff;border:1px solid #eadcf0;border-radius:15px;overflow:hidden;margin:9px 0}.preview-event>div{padding:11px}.preview-event b{display:block;color:#552568;font: bold 14px Georgia,serif}.preview-event small,.preview-event strong{display:block;font-size:10px;color:#8d6999;margin-top:6px}.preview-event p{font-size:11px;line-height:1.5;color:#806c89}.preview-event-cover{display:block;width:100%;height:140px;object-fit:cover}.preview-gallery{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px;margin:8px 0}.preview-gallery img{width:100%;height:62px;object-fit:cover;border-radius:7px}.preview-event video{width:100%;max-height:170px;background:#23142a;border-radius:9px}
 .preview-hours{display:grid;gap:7px;margin-top:12px;padding-top:10px;border-top:1px solid #eadcf0}.preview-hours span{display:flex;justify-content:space-between;gap:8px;font-size:10px;color:#806c89}
 @media(max-width:430px){.metric-grid{gap:7px}.metric-card{padding:11px}.metric-card b{font-size:24px}.category-create{grid-template-columns:1fr}.category-create label:first-child{grid-column:auto}.category-create button{grid-column:auto}.customer-preview-dialog{width:98vw;max-width:98vw}.preview-shell{padding:11px}}
+
+
+/* Keep the publish controls in the document flow so they never cover dashboard metrics. */
+.publish-dock{position:relative;bottom:auto;margin:16px 0 18px}
