@@ -51,7 +51,7 @@ Rutas principales:
 
 Los informes distinguen pedidos recibidos, pagados, pendientes de cobro y completados. Los ingresos y productos vendidos se calculan únicamente a partir de pedidos marcados como **pagados** y que no estén cancelados. BC Admin no inventa ventas ni considera que un pedido enviado sea automáticamente una venta cobrada.
 
-Los pedidos creados desde la aplicación se guardan inicialmente como `pending` y `unpaid`. El personal de la cafetería confirma el cobro desde BC Admin cuando recibe el pago al recoger el pedido. La integración actual no incluye pasarela de pago en línea.
+Los pedidos creados desde la aplicación se guardan inicialmente como `pending` y `unpaid`. El personal de la cafetería confirma el cobro desde BC Admin cuando recibe el pago al recoger el pedido. La integración actual no incluye pasarela de pago en línea. La recepción de pedidos está **desactivada inicialmente** tanto en el catálogo como en el servidor. El administrador debe revisar y corregir los precios reales, activar el interruptor “Activar recepción de pedidos de clientes” en BC Admin y publicar el catálogo para empezar a aceptar pedidos.
 
 ### Controles de seguridad
 
