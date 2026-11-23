@@ -25,7 +25,7 @@ $("#events-admin-list").querySelectorAll("[data-event-del]").forEach(b=>b.onclic
 $("#events-admin-list").querySelectorAll("[data-event-toggle]").forEach(b=>b.onclick=()=>{const e=catalog.events[+b.dataset.eventToggle];e.active=e.active===false;renderManagedContent();updateDraftStatus()});
 }
 function render(){if(!catalog)return;
-$("#list").innerHTML=catalog.products.map((p,i)=>'<div class="item"><img src="'+(p.image||"")+'" alt=""><div><b>'+p.name+'</b><small>$'+Number(p.price).toFixed(2)+' · '+(p.active===false?"Oculto":"Disponible")+(p.featured?" · Destacado":"")+((p.bestSeller||p.mostOrdered)?" · Más pedido":"")+'</small></div><button data-edit="'+i+'">Editar</button><button data-del="'+i+'">×</button></div>').join("");
+$("#list").innerHTML=catalog.products.map((p,i)=>'<div class="item"><img src="'+(p.image||"")+'" alt=""><div><b>'+p.name+'</b><small>$'+Number(p.price).toFixed(2)+' · '+(p.active===false?"Oculto":p.available===false?"Agotado":"Disponible")+(p.featured?" · Destacado":"")+((p.bestSeller||p.mostOrdered)?" · Más pedido":"")+'</small></div><button data-edit="'+i+'">Editar</button><button data-del="'+i+'">×</button></div>').join("");
 $("#list").querySelectorAll("[data-edit]").forEach(b=>b.onclick=()=>openEditor(+b.dataset.edit));
 $("#list").querySelectorAll("[data-del]").forEach(b=>b.onclick=()=>{if(!confirm("¿Eliminar este producto?"))return;catalog.products.splice(+b.dataset.del,1);render();updateDraftStatus()});
 $("#categories").innerHTML=catalog.categories.map((c,i)=>'<span class="cat">'+(c.icon||"🦋")+' '+c.name+' <button data-catedit="'+i+'">Editar</button><button data-catdel="'+i+'">×</button></span>').join("");
