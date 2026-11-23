@@ -1,71 +1,127 @@
 # Butterfly Café
 
-Dos aplicaciones Android conectadas mediante este repositorio:
+Repositorio de las dos aplicaciones Android y el backend:
 
-- `apps/customer`: aplicación para clientes.
-- `apps/admin`: panel privado BC Admin.
-- `data/catalog.json`: catálogo remoto compartido (productos, categorías, promociones, novedades, eventos, avisos e información del establecimiento).
+- `apps/customer`: Butterfly Café para clientes.
+- `apps/admin`: BC Admin para administración.
+- `data/catalog.json`: catálogo remoto compartido.
+- `backend/cloudflare-worker`: API de pedidos, ventas y notificaciones.
+- `backend/cloudflare-worker/migrations`: esquema SQLite para Cloudflare D1.
 
-## Funciones principales
+## Butterfly Café — clientes
 
-### Butterfly Café
 - Inicio con favoritos, más pedidos, promociones y novedades.
-- Secciones independientes de Café y Dulces, con buscador y filtros.
-- Fichas de productos con descripción, ingredientes, precio, fotografía y disponibilidad.
-- Eventos actuales, próximos y anteriores con galerías de imágenes y vídeos.
+- Secciones de Café y Dulces con buscador y filtros.
+- Fichas de producto con fotografía, ingredientes, precio y disponibilidad.
+- Eventos actuales, futuros y anteriores con fotografías y vídeos.
 - Información del negocio, horarios, dirección, Google Maps y WhatsApp.
-- Centro de notificaciones dentro de la aplicación y avisos al sincronizar el catálogo.
-- Registro de un service worker para preparar recepción de notificaciones web push.
+- Centro de avisos dentro de la aplicación.
+- Carrito persistente y pedidos para recoger. El cliente proporciona nombre, teléfono y notas; el servidor recalcula los precios desde el catálogo publicado. La aplicación no procesa pagos en línea.
 
-### BC Admin
-- Gestión de productos, fotografías, precios, ingredientes, disponibilidad y destacados.
-- Crear, editar y organizar categorías por sección.
-- Administrar promociones, novedades, eventos, galerías y avisos a clientes.
-- Subida directa de fotografías para productos, promociones, novedades y eventos. Las imágenes se comprimen en el dispositivo a JPEG antes de subirlas al repositorio.
-- Panel de métricas del catálogo (no son estadísticas de ventas).
-- Vista previa navegable del borrador de cliente antes de publicar.
-- Historial de publicaciones con versión, fecha y resumen de cambios.
-- Control de concurrencia: compara el SHA del catálogo que se cargó con el SHA remoto antes de publicar y utiliza la revisión original en la escritura. Si otro administrador publica primero, la escritura se bloquea en lugar de sobrescribir el catálogo.
+## BC Admin — administración
 
-## Publicación segura y control de conflictos
+- Gestión de productos, categorías, fotografías, ingredientes, disponibilidad y destacados.
+- Gestión de promociones, novedades, eventos, galerías y avisos.
+- Subida y compresión de fotografías antes de guardarlas en el repositorio.
+- Panel de resumen del contenido, vista previa y registro de publicaciones.
+- Protección contra publicaciones concurrentes mediante el SHA del catálogo.
+- Bandeja de pedidos: datos del pedido, productos, notas, estado del pedido y estado del pago.
+- Informe de ventas con rango de fechas, ingresos cobrados, pedidos pagados, pendientes, productos más vendidos y resultados diarios.
+- Configuración de la API y envío de notificaciones.
 
-BC Admin guarda el SHA de `data/catalog.json` que recibió al conectar. Antes de publicar vuelve a consultar ese archivo. Si el SHA cambió, conserva el borrador local y detiene la publicación. Además, el PUT final utiliza el SHA cargado originalmente, de modo que GitHub también rechaza una carrera que ocurra durante las cargas multimedia.
+## Backend — Cloudflare Workers + D1
 
-Las fotografías se suben primero a `apps/customer/assets/media/` con nombres únicos y después se publica el catálogo que las referencia. Si una publicación concurrente se bloquea mientras los medios ya se subieron, pueden quedar archivos multimedia sin referencia en el catálogo; no sustituyen datos de otros administradores.
+La API se encuentra en `backend/cloudflare-worker`.
 
-Las últimas 40 publicaciones se guardan en `publicationHistory` dentro del catálogo compartido.
+Rutas principales:
 
-## Preparación de notificaciones push
+| Ruta | Uso | Protección |
+|---|---|---|
+| `GET /health` | Estado del servicio | Pública |
+| `GET /api/push/config` | Clave pública y capacidades push | Pública |
+| `POST /api/orders` | Registrar pedido para recoger | Pública, validación de catálogo, límite de solicitudes e idempotencia |
+| `POST /api/push/web/subscribe` | Registrar suscripción Web Push | Pública para clientes; requiere token si el destino es Admin |
+| `POST /api/push/native/register` | Registrar token de Android | Pública para clientes; requiere token si el destino es Admin |
+| `GET /api/admin/orders` | Consultar pedidos | Token administrativo |
+| `PATCH /api/admin/orders/:id` | Cambiar estado del pedido o del pago | Token administrativo |
+| `GET /api/admin/stats` | Estadísticas de pedidos y ventas | Token administrativo |
+| `POST /api/admin/push/send` | Enviar notificación | Token administrativo |
 
-BC Admin permite guardar:
-- Clave pública VAPID.
-- Endpoint HTTPS que recibe y registra suscripciones web push.
+### Qué contabilizan las ventas
 
-Butterfly Café registra `apps/customer/service-worker.js`, solicita permiso y envía la suscripción al endpoint configurado. El service worker contiene los manejadores `push` y `notificationclick`.
+Los informes distinguen pedidos recibidos, pagados, pendientes de cobro y completados. Los ingresos y productos vendidos se calculan únicamente a partir de pedidos marcados como **pagados** y que no estén cancelados. BC Admin no inventa ventas ni considera que un pedido enviado sea automáticamente una venta cobrada.
 
-**La entrega push real todavía necesita un servidor de suscripciones/envío** que almacene las suscripciones y firme mensajes con la clave privada VAPID. La clave privada nunca debe subirse a este repositorio. El endpoint debe aceptar el JSON de suscripción y devolver una respuesta HTTP exitosa. La configuración web push tampoco equivale a notificaciones nativas en la APK: Android requiere integrar un proveedor como Firebase Cloud Messaging y provisionar sus credenciales por separado.
+Los pedidos creados desde la aplicación se guardan inicialmente como `pending` y `unpaid`. El personal de la cafetería confirma el cobro desde BC Admin cuando recibe el pago al recoger el pedido. La integración actual no incluye pasarela de pago en línea. La recepción de pedidos está **desactivada inicialmente** tanto en el catálogo como en el servidor. El administrador debe revisar y corregir los precios reales, activar el interruptor “Activar recepción de pedidos de clientes” en BC Admin y publicar el catálogo para empezar a aceptar pedidos.
 
-Los avisos de catálogo existentes siguen funcionando aunque no se configure push.
+### Controles de seguridad
 
-## Cómo se actualiza
+- Los precios y la disponibilidad se comprueban en el servidor contra `data/catalog.json`; el total enviado por el cliente no se acepta como fuente de verdad.
+- Los pedidos utilizan claves de idempotencia para impedir duplicados por reintentos.
+- Las rutas administrativas requieren un token privado.
+- Los tokens de los administradores se cifran con Android Keystore dentro de la APK. En navegador web se guardan solamente en la sesión.
+- Las claves VAPID privadas y la cuenta de servicio de Firebase se guardan como secretos del Worker, nunca dentro del catálogo ni en los APK.
+- Las solicitudes públicas tienen límites por IP; los registros antiguos de límite se purgan mediante el evento programado del Worker.
+- Las notificaciones de pedido al personal no incluyen el teléfono ni las notas privadas del cliente.
 
-La aplicación de clientes consulta `data/catalog.json` periódicamente y también al regresar a primer plano. BC Admin permite modificar el catálogo y publicar los cambios en este repositorio.
+## Desplegar el backend en Cloudflare
 
-Para publicar desde Admin se necesita un **Fine-grained Personal Access Token** limitado a este repositorio y con permiso **Contents: Read and write**. En la versión Android, el token se guarda mediante el plugin nativo de almacenamiento seguro; en navegador web se mantiene en la sesión de administración. Nunca se escribe en el catálogo ni se incluye en el código fuente.
+La primera configuración necesita una cuenta Cloudflare y una base de datos D1:
+
+1. Crea una base de datos D1 llamada `butterfly-cafe-db` y copia su ID.
+2. En GitHub → Settings → Secrets and variables → Actions, configura estos secretos:
+   - `CLOUDFLARE_API_TOKEN` — permiso para desplegar Workers y administrar D1.
+   - `CLOUDFLARE_ACCOUNT_ID`.
+   - `CLOUDFLARE_D1_DATABASE_ID`.
+   - `BUTTERFLY_ADMIN_API_TOKEN` — genera una cadena aleatoria de al menos 32 caracteres.
+3. Ejecuta manualmente el workflow **Deploy Butterfly Café API (Cloudflare Workers + D1)** desde Actions. También se ejecuta cuando cambian los archivos del backend en `main`.
+4. El workflow aplica las migraciones D1, configura los secretos del Worker y despliega la API. El resumen del workflow muestra la URL `workers.dev`.
+5. Abre BC Admin → Push. Pega la URL HTTPS del Worker y el mismo token administrativo. Pulsa **Guardar conexión segura** y después **Publicar todos los cambios** para que la URL se incluya en el catálogo que descarga Butterfly Café.
+
+No compartas el token administrativo. La URL de la API puede ser pública; el token no.
+
+## Notificaciones push
+
+### Web Push
+
+Para que funcionen los avisos web, configura en GitHub Actions:
+
+- `VAPID_PUBLIC_KEY`
+- `VAPID_PRIVATE_KEY`
+- `VAPID_SUBJECT` (por ejemplo, un `mailto:` de contacto)
+
+La clave privada solo se almacena como secreto de Cloudflare Worker. El cliente pide permiso, registra su suscripción y el Worker envía las notificaciones.
+
+### Android / Firebase Cloud Messaging
+
+Para habilitar FCM en los APK:
+
+1. Crea o utiliza un proyecto de Firebase y registra dos aplicaciones Android con estos identificadores exactos:
+   - `com.butterflycafe.app`
+   - `com.butterflycafe.admin`
+2. Descarga el `google-services.json` de cada aplicación.
+3. Convierte cada archivo a Base64 y añade estos secretos de GitHub:
+   - `FIREBASE_CUSTOMER_GOOGLE_SERVICES_JSON_BASE64`
+   - `FIREBASE_ADMIN_GOOGLE_SERVICES_JSON_BASE64`
+4. Añade `FCM_SERVICE_ACCOUNT_JSON` como secreto del Worker, con el JSON de la cuenta de servicio Firebase que tenga permiso para enviar mensajes.
+5. Vuelve a compilar las aplicaciones. El workflow valida el package ID del archivo Firebase y solo activa FCM en la APK que tiene su configuración.
+
+La app conserva una activación explícita de avisos. Después de instalar una APK configurada con Firebase, abre BC Admin → Push y registra este teléfono para recibir nuevos pedidos. Los clientes pueden activar los avisos desde el centro de notificaciones.
+
+Sin estos archivos y secretos reales, la interfaz y el código quedan preparados, pero no se puede enviar una notificación push real. Nunca se suben los JSON de Firebase ni las claves privadas al repositorio.
+
+## Ejecutar pruebas
+
+- API: el workflow **Butterfly Café API tests** instala dependencias, comprueba sintaxis y ejecuta pruebas de salud, CORS, autenticación y validación de pedidos.
+- Interfaz: el workflow **Capturas reales de Butterfly Cafe** usa Playwright para comprobar cliente, carrito, BC Admin, vista previa, formularios, historial, gestión de pedidos, ventas y notificaciones simuladas.
+- Android: **Build and release Butterfly Café Android apps** compila ambos APK. En los Pull Requests sube los APK como artefactos de prueba; al fusionar a `main` publica una release conjunta.
+
+## Datos comerciales que deben revisarse
+
+Los datos actuales del catálogo todavía contienen información de demostración. En concreto, el Cappuccino tiene un precio de `500000` USD. No se ha cambiado automáticamente. Antes de aceptar pedidos reales, corrige ese precio y confirma los precios, imágenes, ingredientes, horarios, teléfonos y demás datos comerciales desde BC Admin.
 
 ## Identificadores de aplicación
 
 - Cliente: `com.butterflycafe.app`
 - Administración: `com.butterflycafe.admin`
 
-Los proyectos utilizan Capacitor para conservar estos identificadores al preparar los paquetes Android.
-
-## Ejecución web
-
-Abre `apps/customer/index.html` o `apps/admin/index.html` desde un servidor estático HTTPS para probar las interfaces. El service worker requiere un contexto seguro (HTTPS o localhost).
-
-Para publicar ambas carpetas con GitHub Pages, entra en **Settings → Pages** del repositorio y selecciona **GitHub Actions** como fuente de despliegue. Si Pages todavía no está habilitado, el workflow conserva igualmente un artefacto descargable llamado `butterfly-cafe-web-apps`.
-
-## Datos iniciales
-
-Los precios y productos iniciales son datos de demostración y deben confirmarse con la cafetería antes de publicar el menú real. No se deben interpretar las cifras de precio de prueba como precios aprobados.
+Las aplicaciones usan Capacitor 7 y conservan sus identificadores entre compilaciones.

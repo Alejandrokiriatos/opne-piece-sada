@@ -1,0 +1,29 @@
+name: Butterfly Café API tests
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'backend/cloudflare-worker/**'
+      - '.github/workflows/backend-tests.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'backend/cloudflare-worker/**'
+      - '.github/workflows/backend-tests.yml'
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend/cloudflare-worker
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install Worker dependencies
+        run: npm install
+      - name: Check Worker JavaScript syntax
+        run: node --check src/index.js
+      - name: Run API tests
+        run: npm test

@@ -145,5 +145,11 @@
     "publicKey": "",
     "subscriptionEndpoint": "",
     "provider": "web-push-vapid"
+  },
+  "backend": {
+    "apiBaseUrl": ""
+  },
+  "orders": {
+    "enabled": false
   }
 }
