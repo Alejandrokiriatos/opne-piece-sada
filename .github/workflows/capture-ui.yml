@@ -34,17 +34,46 @@ jobs:
         run: |
           python3 -m http.server 4173 --directory . > /tmp/butterfly-http.log 2>&1 &
           for i in $(seq 1 30); do curl -fsS http://127.0.0.1:4173/apps/customer/ >/dev/null && break || sleep 1; done
-      - name: Capture customer and admin interfaces
+      - name: Capture and smoke-test customer and admin interfaces
         run: |
           node --input-type=module <<'NODE'
           import { chromium } from 'playwright';
           const browser = await chromium.launch({headless:true});
           const page = await browser.newPage({viewport:{width:430,height:932},deviceScaleFactor:1});
-          page.on('pageerror', e => console.error('PAGE ERROR:', e.message));
+          const pageErrors = [];
+          page.on('pageerror', e => pageErrors.push(e.message));
           await page.goto('http://127.0.0.1:4173/apps/customer/', {waitUntil:'networkidle'});
           await page.screenshot({path:'butterfly-cafe-cliente.png',fullPage:true});
           await page.goto('http://127.0.0.1:4173/apps/admin/', {waitUntil:'networkidle'});
+          await page.waitForFunction(() => document.querySelector('#metric-products')?.textContent === '4');
           await page.screenshot({path:'butterfly-cafe-admin.png',fullPage:true});
+
+          // Test the unpublished draft preview.
+          await page.locator('#preview-open').click();
+          await page.locator('#customer-preview-dialog[open]').waitFor();
+          await page.locator('[data-preview-view="coffee"]').click();
+          const coffeePreview = await page.locator('#customer-preview-content').innerText();
+          if (!coffeePreview.includes('Cappuccino')) throw new Error('Customer preview did not show the current coffee products.');
+          await page.locator('[data-preview-view="events"]').click();
+          const eventsPreview = await page.locator('#customer-preview-content').innerText();
+          if (!eventsPreview.includes('El ganador del evento es')) throw new Error('Events preview did not show the event draft.');
+          await page.locator('[data-preview-close]').click();
+
+          // Test category creation without publishing the draft.
+          await page.locator('[data-admin-tab="categories"]').click();
+          await page.locator('#category-name').fill('Playwright Test Category');
+          await page.locator('#category-group').selectOption('sweet');
+          await page.locator('#add-category').click();
+          if (!(await page.locator('#categories').innerText()).includes('Playwright Test Category')) throw new Error('Admin category creation failed.');
+
+          // Test in-app announcement authoring in BC Admin.
+          await page.locator('[data-admin-tab="notifications"]').click();
+          await page.locator('#notice-title').fill('Playwright test notice');
+          await page.locator('#notice-message').fill('This is a local preview test; it will not be published.');
+          await page.locator('#add-notice').click();
+          if (!(await page.locator('#notice-admin-list').innerText()).includes('Playwright test notice')) throw new Error('Admin announcement creation failed.');
+
+          if (pageErrors.length) throw new Error('Browser page errors: ' + pageErrors.join(' | '));
           await browser.close();
           NODE
       - uses: actions/upload-artifact@v4
