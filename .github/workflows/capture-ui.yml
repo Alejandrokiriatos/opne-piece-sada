@@ -44,7 +44,7 @@ jobs:
           page.on('pageerror', e => pageErrors.push(e.message));
           await page.goto('http://127.0.0.1:4173/apps/customer/', {waitUntil:'networkidle'});
           await page.waitForSelector('[data-add-cart="cappuccino"]');
-          await page.locator('[data-add-cart="cappuccino"]').click();
+          await page.locator('[data-add-cart="cappuccino"]').first().click();
           await page.locator('#cart-open').waitFor({state:'visible'});
           await page.locator('#cart-open').click();
           await page.locator('#cart-dialog[open]').waitFor();
