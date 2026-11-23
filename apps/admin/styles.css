@@ -106,3 +106,8 @@
 .sales-row>div{display:grid;gap:4px}.sales-row b{font:bold 12px Georgia,serif;color:#552568}.sales-row small{font-size:10px;color:#927e98}.sales-row strong{color:#82449a;font-size:12px;white-space:nowrap}
 .status.error,.hint.error{color:#a43e5d!important}
 @media(max-width:420px){.order-edit-row{grid-template-columns:1fr 1fr}.order-edit-row button{grid-column:1/-1}.order-card{padding:11px}.sales-range{gap:7px}}
+
+
+.orders-enable-card{padding:13px 14px;border:1px solid #ecd8bc;border-radius:14px;background:#fff8ed;margin:12px 0 15px}
+.orders-enable-card .check{display:flex;align-items:center;gap:9px;color:#754c25;font-size:12px;font-weight:900}
+.orders-enable-card .hint{margin:7px 0 0;color:#8d6b43;font-size:10px;line-height:1.5}
