@@ -138,7 +138,7 @@ try{
  alert("¡Cambios publicados! 🦋");
 }catch(e){
  const message=String(e?.message||e);
- if(message.includes("CONFLICT")||/\\b(409|422)\\b/.test(message)){status("Conflicto de publicación: el catálogo remoto cambió. El borrador se conservó.");alert("GitHub rechazó la publicación porque la revisión del catálogo ya no coincide. No se sobrescribieron los datos del otro administrador.\n\nTus cambios permanecen en este panel. Vuelve a conectar, compara los cambios y publica de nuevo.");}
+ if(message.includes("CONFLICT")||/\b(409|422)\b/.test(message)){status("Conflicto de publicación: el catálogo remoto cambió. El borrador se conservó.");alert("GitHub rechazó la publicación porque la revisión del catálogo ya no coincide. No se sobrescribieron los datos del otro administrador.\n\nTus cambios permanecen en este panel. Vuelve a conectar, compara los cambios y publica de nuevo.");}
  else{status("No se pudo publicar: "+message);alert("Error al publicar: "+message+"\n\nComprueba el token y el permiso Contents: Read and write.")}
 }finally{publishing=false;btn.disabled=false;btn.textContent="Sí, publicar cambios"}
 }
