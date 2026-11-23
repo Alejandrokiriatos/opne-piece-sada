@@ -26,3 +26,7 @@
 .notification-card{padding:13px;margin:9px 0;border:1px solid #ead8f0;border-radius:15px;background:#fff}.notification-card b{color:#562766;font: bold 14px Georgia,serif}.notification-card p{font-size:11px;color:#806c89;line-height:1.4}.notification-card small{font-size:9px;color:#9b83a3}.permission-button,.whatsapp-link,.action-link{display:inline-flex;align-items:center;justify-content:center;text-decoration:none;border:0;border-radius:15px;padding:11px 14px;background:#7e4294;color:#fff;font-size:11px;font-weight:800;margin-top:10px}.whatsapp-link{background:#198b54;width:100%}.action-link{background:#f0e2f6;color:#693580}
 .about-line{gap:7px}.weekly-hours-list span{display:flex;justify-content:space-between;gap:10px}
 @media(max-width:390px){.brand-copy h1{font-size:22px}.top-butterfly{display:none}.notification-bell{width:35px;height:35px}.promo-slide{grid-template-columns:34% 1fr}.product-image-button img{height:105px}}
+
+
+.event-gallery{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;margin-top:12px}.event-gallery button{border:0;padding:0;background:#f3e7f7;border-radius:10px;overflow:hidden}.event-gallery img{display:block;width:100%;height:82px;object-fit:cover}
+#catalog-heading[hidden]{display:none}
