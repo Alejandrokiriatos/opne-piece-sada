@@ -9,12 +9,14 @@
     {
       "id": "cafes",
       "name": "Cafés",
-      "icon": "☕"
+      "icon": "☕",
+      "group": "coffee"
     },
     {
       "id": "dulces",
       "name": "Dulces",
-      "icon": "🧁"
+      "icon": "🧁",
+      "group": "sweet"
     },
     {
       "id": "eventos",
@@ -136,5 +138,6 @@
     "address": "",
     "mapUrl": "",
     "whatsapp": ""
-  }
+  },
+  "notifications": []
 }
