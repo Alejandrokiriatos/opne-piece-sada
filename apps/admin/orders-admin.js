@@ -189,6 +189,7 @@
     let permission = await PushNotifications.checkPermissions();
     if (permission.receive !== "granted") permission = await PushNotifications.requestPermissions();
     if (permission.receive !== "granted") throw new Error("No se concedió permiso para notificaciones.");
+    await PushNotifications.createChannel({id:"butterfly_updates",name:"Avisos de Butterfly Café",description:"Nuevos pedidos y avisos administrativos",importance:5,sound:"default",visibility:1,vibration:true});
     await PushNotifications.register();
     setStatus("#push-config-status", "Solicitando registro de BC Admin en Firebase…");
   }
