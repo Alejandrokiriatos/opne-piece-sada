@@ -1,8 +1,16 @@
-import { FileTransfer } from "@capacitor/file-transfer";
-import { Filesystem, Directory } from "@capacitor/filesystem";
-import { registerPlugin } from "@capacitor/core";
-
-const ApkInstaller = registerPlugin("ApkInstaller");
+let FileTransfer = null, Filesystem = null, Directory = null, ApkInstaller = null;
+async function loadNativeModules() {
+  if (FileTransfer && Filesystem && Directory && ApkInstaller) return;
+  const [transferModule, filesystemModule, coreModule] = await Promise.all([
+    import("@capacitor/file-transfer"),
+    import("@capacitor/filesystem"),
+    import("@capacitor/core")
+  ]);
+  FileTransfer = transferModule.FileTransfer;
+  Filesystem = filesystemModule.Filesystem;
+  Directory = filesystemModule.Directory;
+  ApkInstaller = coreModule.registerPlugin("ApkInstaller");
+}
 
 (() => {
   const OWNER = "Alejandrokiriatos";
@@ -73,6 +81,13 @@ const ApkInstaller = registerPlugin("ApkInstaller");
       window.open(apkUrl, "_blank", "noopener");
       return;
     }
+    try { await loadNativeModules(); } catch (error) {
+      console.error("No se pudieron cargar los módulos nativos", error);
+      button.disabled = false;
+      button.textContent = "REINTENTAR DESCARGA";
+      help.textContent = "No se pudo preparar el instalador de Android. Inténtalo de nuevo.";
+      return;
+    }
     downloading = true;
     button.disabled = true;
     button.textContent = "DESCARGANDO…";
@@ -101,6 +116,8 @@ const ApkInstaller = registerPlugin("ApkInstaller");
   }
 
   async function checkForUpdate() {
+    // The APK updater only runs inside the installed native Android app, not the web/PWA preview.
+    if (!window.Capacitor || !window.Capacitor.isNativePlatform || !window.Capacitor.isNativePlatform()) return;
     if (checking || document.getElementById("mandatory-app-update")?.style.display === "flex") return;
     checking = true;
     try {
