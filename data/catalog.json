@@ -139,5 +139,11 @@
     "mapUrl": "",
     "whatsapp": ""
   },
-  "notifications": []
+  "notifications": [],
+  "publicationHistory": [],
+  "push": {
+    "publicKey": "",
+    "subscriptionEndpoint": "",
+    "provider": "web-push-vapid"
+  }
 }
