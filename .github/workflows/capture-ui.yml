@@ -73,6 +73,52 @@ jobs:
           await page.locator('#add-notice').click();
           if (!(await page.locator('#notice-admin-list').innerText()).includes('Playwright test notice')) throw new Error('Admin announcement creation failed.');
 
+          // Direct image upload and compressed media preview; do not publish this test draft.
+          await page.locator('[data-admin-tab="promotions"]').click();
+          await page.locator('#promo-title').fill('Playwright photo promotion');
+          await page.locator('#promo-desc').fill('Image upload smoke test');
+          const svg = Buffer.from('<svg xmlns="http://www.w3.org/2000/svg" width="8" height="8"><rect width="8" height="8" fill="#7e4294"/></svg>');
+          await page.locator('#promo-image-file').setInputFiles({name:'promo.svg',mimeType:'image/svg+xml',buffer:svg});
+          await page.locator('#promo-image-preview img').waitFor();
+          await page.locator('#add-promo').click();
+          if (!(await page.locator('#promo-admin-list').innerText()).includes('Playwright photo promotion')) throw new Error('Admin promotion media staging failed.');
+          if (!(await page.locator('#promo-admin-list img.managed-thumb').count())) throw new Error('The uploaded promotion image preview was not shown.');
+
+          // Verify the publication history and push setup pages are accessible.
+          await page.locator('[data-admin-tab="history"]').click();
+          if (!(await page.locator('#publication-history-list').innerText()).includes('Todavía no hay publicaciones')) throw new Error('Publication history screen did not render its empty state.');
+          await page.locator('[data-admin-tab="push"]').click();
+          await page.locator('#push-public-key').fill('BTEST_PUBLIC_VAPID_KEY');
+          await page.locator('#push-endpoint').fill('https://push.example.test/subscriptions');
+          if (!(await page.locator('#push-config-status').innerText()).includes('Configuración introducida')) throw new Error('Push configuration readiness did not update.');
+
+          // Verify optimistic concurrency: a changed catalog SHA must block the write.
+          let catalogReads = 0, putRequests = 0;
+          const { readFile } = await import('node:fs/promises');
+          const catalogBase64 = (await readFile('data/catalog.json')).toString('base64');
+          await page.route('https://api.github.com/**', async route => {
+            const request = route.request(), url = new URL(request.url());
+            if (url.pathname === '/user') return route.fulfill({status:200,contentType:'application/json',body:'{"login":"playwright"}'});
+            if (url.pathname.endsWith('/contents/data/catalog.json') && request.method() === 'GET') {
+              catalogReads++;
+              return route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({sha:catalogReads===1?'sha-loaded':'sha-changed-remotely',content:catalogBase64})});
+            }
+            if (request.method() === 'PUT') putRequests++;
+            return route.fulfill({status:404,contentType:'application/json',body:'{"message":"Not found"}'});
+          });
+          page.on('dialog', dialog => dialog.accept());
+          await page.locator('#token').fill('playwright-test-token');
+          await page.locator('#connect').click();
+          await page.waitForFunction(() => document.querySelector('#status')?.textContent.includes('Conexión correcta'));
+          await page.locator('#news-title').fill('Concurrent publication test');
+          await page.locator('#news-desc').fill('Must not overwrite another admin.');
+          await page.locator('#add-news').click();
+          await page.locator('#publish').click();
+          await page.locator('#accept-publish').click();
+          await page.waitForFunction(() => document.querySelector('#status')?.textContent.includes('Conflicto de publicación'));
+          if (putRequests !== 0) throw new Error('BC Admin attempted to overwrite the catalog after a SHA conflict.');
+          if (catalogReads < 2) throw new Error('The concurrent catalog version was not checked before publication.');
+
           if (pageErrors.length) throw new Error('Browser page errors: ' + pageErrors.join(' | '));
           await browser.close();
           NODE
