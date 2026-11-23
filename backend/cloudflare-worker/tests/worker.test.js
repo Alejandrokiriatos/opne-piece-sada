@@ -101,3 +101,56 @@ test("refuses to accept a valid cart while orders are disabled in the published 
     globalThis.fetch = originalFetch;
   }
 });
+
+test("creates pickup orders from server-side catalogue prices and returns a unique reference", async () => {
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async () => new Response(JSON.stringify({
+    currency: "USD", orders: { enabled: true }, products: [
+      { id: "cappuccino", name: "Cappuccino", price: 5.5, active: true, available: true }
+    ]
+  }), { status: 200, headers: { "Content-Type": "application/json" } });
+  try {
+    const response = await worker.fetch(new Request("https://api.example.test/api/orders", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Idempotency-Key": "valid-order-key-123456" },
+      body: JSON.stringify({
+        customerName: "Cliente Test", customerPhone: "+15555550100",
+        items: [{ productId: "cappuccino", quantity: 2, clientPrice: 0.01 }]
+      })
+    }), env({ CATALOG_URL: "https://catalog.example.test/catalog.json" }));
+    assert.equal(response.status, 201);
+    const body = await response.json();
+    assert.equal(body.order.subtotal, 11);
+    assert.equal(body.order.currency, "USD");
+    assert.match(body.order.orderNumber, /^BC-\d{6}-[A-F0-9]{6}$/);
+    assert.equal(body.order.items[0].unitPrice, 5.5);
+    assert.equal(body.order.items[0].quantity, 2);
+    assert.equal(body.order.paymentStatus, "unpaid");
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("rejects a product that the published catalogue marks unavailable", async () => {
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async () => new Response(JSON.stringify({
+    currency: "USD", orders: { enabled: true }, products: [
+      { id: "cappuccino", name: "Cappuccino", price: 5.5, active: true, available: false }
+    ]
+  }), { status: 200, headers: { "Content-Type": "application/json" } });
+  try {
+    const response = await worker.fetch(new Request("https://api.example.test/api/orders", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Idempotency-Key": "unavailable-order-key-123" },
+      body: JSON.stringify({
+        customerName: "Cliente Test", customerPhone: "+15555550100",
+        items: [{ productId: "cappuccino", quantity: 1 }]
+      })
+    }), env({ CATALOG_URL: "https://catalog.example.test/catalog.json" }));
+    assert.equal(response.status, 409);
+    const body = await response.json();
+    assert.match(body.error, /no está disponible/i);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
