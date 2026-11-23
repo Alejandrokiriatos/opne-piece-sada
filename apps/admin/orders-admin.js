@@ -162,7 +162,7 @@
         try {
           const response = await fetch(base + "/api/push/native/register", {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: { "Content-Type": "application/json", "Authorization": "Bearer " + (window.BCAdmin?.getApiToken?.() || "") },
             body: JSON.stringify({ appId: "admin", platform: "android", token: token.value })
           });
           if (!response.ok) throw new Error("HTTP " + response.status);
