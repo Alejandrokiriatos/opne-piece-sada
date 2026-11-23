@@ -6,6 +6,12 @@ on:
       - 'apps/customer/**'
       - 'apps/admin/**'
       - '.github/workflows/android-build.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'apps/customer/**'
+      - 'apps/admin/**'
+      - '.github/workflows/android-build.yml'
 permissions:
   contents: write
 jobs:
@@ -168,6 +174,7 @@ jobs:
           name: butterfly-cafe-${{ matrix.app }}-apk
           path: apps/${{ matrix.app }}/android/app/build/outputs/apk/debug/butterfly-cafe-${{ matrix.app }}.apk
   release:
+    if: github.event_name == 'push'
     needs: build
     runs-on: ubuntu-latest
     steps:
