@@ -1,6 +1,6 @@
 {
-  "version": 12,
-  "updatedAt": "2026-11-22T23:10:56.105Z",
+  "version": 13,
+  "updatedAt": "2026-11-22T23:24:53.731Z",
   "cafeName": "Butterfly Café",
   "tagline": "Donde cada sorbo se siente especial ♡",
   "currency": "USD",
@@ -78,7 +78,16 @@
       "available": true
     }
   ],
-  "promotions": [],
+  "promotions": [
+    {
+      "id": "promo-1795389871770",
+      "title": "Hola",
+      "description": "Hola a todos",
+      "image": "https://raw.githubusercontent.com/Alejandrokiriatos/opne-piece-sada/main/apps/customer/assets/media/promotion-promo-1795389871770-1795389882110-0.jpg",
+      "validUntil": "2026-11-23",
+      "active": true
+    }
+  ],
   "event": {
     "title": "El ganador del evento es",
     "winner": "Alejandro Llorente",
@@ -143,6 +152,14 @@
   },
   "notifications": [],
   "publicationHistory": [
+    {
+      "id": "publication-1795389893731",
+      "version": 13,
+      "publishedAt": "2026-11-22T23:24:53.731Z",
+      "summary": [
+        "Promociones"
+      ]
+    },
     {
       "id": "publication-1795389056110",
       "version": 12,
