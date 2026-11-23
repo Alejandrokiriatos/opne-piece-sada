@@ -93,9 +93,53 @@ function syncFields(){ensureContentArrays();catalog.event=catalog.event||{};cata
 function changeSummary(){const before=original||{products:[],categories:[]};const parts=[];const pDelta=catalog.products.length-before.products.length;if(pDelta)parts.push((pDelta>0?"+":"")+pDelta+" producto(s) en el catálogo");if(JSON.stringify(catalog.products)!==JSON.stringify(before.products)&&!pDelta)parts.push("Productos: datos, precios, fotos o disponibilidad modificados");if(JSON.stringify(catalog.categories)!==JSON.stringify(before.categories))parts.push("Categorías creadas, editadas o eliminadas");const oldEvent=JSON.stringify(before.event||{}),newEvent=JSON.stringify(catalog.event||{});if(oldEvent!==newEvent||videoData||removeVideo)parts.push("Información y/o vídeo de Eventos");if(JSON.stringify(before.about||{})!==JSON.stringify(catalog.about||{}))parts.push("Sobre nosotros: información y horarios semanales");if(JSON.stringify(before.about?.closureAlert||null)!==JSON.stringify(catalog.about?.closureAlert||null))parts.push("Aviso extraordinario de cierre para los clientes");if(JSON.stringify(before.promotions||[])!==JSON.stringify(catalog.promotions||[]))parts.push("Promociones");if(JSON.stringify(before.news||[])!==JSON.stringify(catalog.news||[]))parts.push("Novedades");if(JSON.stringify(before.notifications||[])!==JSON.stringify(catalog.notifications||[]))parts.push("Avisos para clientes");if(JSON.stringify(before.events||[])!==JSON.stringify(catalog.events||[]))parts.push("Historial y próximos eventos");if(eventCoverFile||eventGalleryFiles.length)parts.push("Fotografías nuevas de portada o galería del evento");if(promoImageFile||newsImageFile||archiveImageFile||archiveGalleryFiles.length)parts.push("Fotografías preparadas para promociones, novedades o eventos");if(JSON.stringify(before.push||{})!==JSON.stringify(catalog.push||{}))parts.push("Configuración para futuras notificaciones push");if(JSON.stringify(before.location||{})!==JSON.stringify(catalog.location||{}))parts.push("Ubicación, Google Maps y WhatsApp");if(!parts.length)parts.push("Cambios de formulario pendientes de guardar");return parts}
 function updateDraftStatus(){if(!catalog)return;const n=changeSummary().length;$("#draft-status").textContent=n===1&&changeSummary()[0].startsWith("Cambios de formulario")?"Revisa los datos antes de publicar.":n+" apartado(s) con cambios pendientes de publicar."}
 function showPublishConfirmation(){if(!catalog){alert("Conecta primero con GitHub.");return}syncFields();const items=changeSummary();$("#change-summary").innerHTML="<ul>"+items.map(x=>"<li>"+x+"</li>").join("")+"</ul>";$("#publish-confirm").showModal()}
-async function publish(){if(!catalog){alert("Conecta primero con GitHub.");return}if(!$("#token").value.trim()){alert("Introduce el token privado de GitHub en Configuración técnica.");$("#publish-confirm").close();return}const btn=$("#accept-publish");btn.disabled=true;btn.textContent="Publicando…";try{await api("");for(const p of catalog.products){if(p._photo){const ext=(p._photo.name.split(".").pop()||"jpg").toLowerCase().replace(/[^a-z0-9]/g,"");p.image=await uploadFile("apps/customer/assets/products/"+p.id+"."+ext,p._photo,"Actualizar imagen de "+p.name);delete p._photo}}
-if(videoData){catalog.event.video=await uploadFile("apps/customer/assets/event-video.mp4",videoData,"Reemplazar vídeo del evento Butterfly Café")}else if(removeVideo){delete catalog.event.video;await deleteRepoFile("apps/customer/assets/event-video.mp4","Eliminar vídeo activo del evento Butterfly Café")}
-let old;try{old=await api("data/catalog.json")}catch{}catalog.version=(catalog.version||0)+1;catalog.updatedAt=new Date().toISOString();await put("data/catalog.json",b64utf8(JSON.stringify(catalog,null,2)+"\n"),"Publicar cambios Butterfly Café",old?.sha);videoData=null;removeVideo=false;original=JSON.parse(JSON.stringify(catalog));$("#publish-confirm").close();status("¡Publicado! La aplicación principal recibirá los cambios. ✓",true);alert("¡Cambios publicados! 🦋");updateDraftStatus();loadEventFields()}catch(e){status("No se pudo publicar: "+e.message);alert("Error al publicar: "+e.message+" Comprueba el token y el permiso Contents: Read and write.")}finally{btn.disabled=false;btn.textContent="Sí, publicar cambios"}}
+async function publish(){
+if(!catalog){alert("Conecta primero con GitHub.");return}
+if(publishing)return;
+if(!$("#token").value.trim()){alert("Introduce el token privado de GitHub en Configuración técnica.");$("#publish-confirm").close();return}
+publishing=true;const btn=$("#accept-publish");btn.disabled=true;btn.textContent="Publicando…";
+try{
+ syncFields();
+ if(!catalogSha)throw Error("No hay una revisión cargada del catálogo. Conecta de nuevo con GitHub antes de publicar.");
+ status("Comprobando que nadie haya publicado cambios después de tu última carga…");
+ const latest=await api("data/catalog.json");
+ if(latest.sha!==catalogSha)throw Error("CONFLICT: el catálogo cambió en GitHub desde que abriste BC Admin. No se sobrescribió ningún cambio. Vuelve a comprobar la conexión y revisa tu borrador.");
+ const summary=changeSummary().filter(x=>!x.startsWith("Cambios de formulario"));
+ // Upload product images.
+ for(const p of catalog.products||[]){if(p._photo){p.image=await uploadImageAsset("product-"+p.id,p._photo);delete p._photo}}
+ // Upload the main event cover and its gallery.
+ catalog.event=catalog.event||{};
+ if(eventCoverFile)catalog.event.image=await uploadImageAsset("event-cover",eventCoverFile);
+ if(eventGalleryFiles.length){const urls=[];for(let i=0;i<eventGalleryFiles.length;i++)urls.push(await uploadImageAsset("event-gallery",eventGalleryFiles[i],i));catalog.event.images=[...(catalog.event.images||[]),...urls]}
+ // Upload images staged on promotions and news.
+ for(const p of catalog.promotions||[]){if(p._imageFile){p.image=await uploadImageAsset("promotion-"+p.id,p._imageFile);delete p._imageFile}}
+ for(const n of catalog.news||[]){if(n._imageFile){n.image=await uploadImageAsset("news-"+n.id,n._imageFile);delete n._imageFile}}
+ // Upload covers and gallery images for individual archived/upcoming events.
+ for(const e of catalog.events||[]){if(e._imageFile){e.image=await uploadImageAsset("event-"+e.id,e._imageFile);delete e._imageFile}if(e._galleryFiles?.length){const urls=[];for(let i=0;i<e._galleryFiles.length;i++)urls.push(await uploadImageAsset("event-gallery-"+e.id,e._galleryFiles[i],i));e.images=[...(e.images||[]),...urls];delete e._galleryFiles}}
+ if(videoData)catalog.event.video=await uploadFile("apps/customer/assets/event-video.mp4",videoData,"Reemplazar vídeo del evento Butterfly Café");
+ else if(removeVideo)delete catalog.event.video;
+ // Never serialize editor-only fields or base64 preview payloads.
+ for(const collection of [catalog.products,catalog.promotions,catalog.news,catalog.events])for(const item of collection||[])for(const key of Object.keys(item))if(key.startsWith("_"))delete item[key];
+ catalog.publicationHistory=catalog.publicationHistory||[];
+ catalog.version=Math.max(Number(catalog.version)||0,Number(original?.version)||0)+1;
+ catalog.updatedAt=new Date().toISOString();
+ catalog.publicationHistory.unshift({id:"publication-"+Date.now(),version:catalog.version,publishedAt:catalog.updatedAt,summary:summary.length?summary:["Publicación de contenido"]});
+ catalog.publicationHistory=catalog.publicationHistory.slice(0,40);
+ status("Guardando catálogo con control de concurrencia…");
+ // The previously loaded SHA is intentionally used here. If another admin publishes while media uploads are running, GitHub rejects the write instead of overwriting their catalog.
+ const saved=await put("data/catalog.json",b64utf8(JSON.stringify(catalog,null,2)+"\n"),"Publicar cambios Butterfly Café · v"+catalog.version,catalogSha);
+ catalogSha=saved.content?.sha||catalogSha;
+ videoData=null;removeVideo=false;eventCoverFile=null;eventGalleryFiles=[];promoImageFile=null;newsImageFile=null;archiveImageFile=null;archiveGalleryFiles=[];
+ original=JSON.parse(JSON.stringify(catalog));
+ $("#publish-confirm").close();status("¡Publicado! El catálogo y el historial se guardaron correctamente. ✓",true);
+ render();loadEventFields();loadAboutFields();loadPushFields();updateDraftStatus();
+ alert("¡Cambios publicados! 🦋");
+}catch(e){
+ const message=String(e?.message||e);
+ if(message.includes("CONFLICT")){status("Conflicto de publicación: el catálogo remoto cambió. El borrador se conservó.");alert(message+"\n\nCopia tus cambios importantes y vuelve a conectar para cargar la última versión.")}
+ else{status("No se pudo publicar: "+message);alert("Error al publicar: "+message+"\n\nComprueba el token y el permiso Contents: Read and write.")}
+}finally{publishing=false;btn.disabled=false;btn.textContent="Sí, publicar cambios"}
+}
 $("#clear-all").onclick=()=>{if(!catalog)return;if(!confirm("Esto borrará los productos, promociones y el evento. Las categorías y la información del local se conservarán. ¿Continuar?"))return;if(prompt('Escribe BORRAR para confirmar')!=="BORRAR")return;catalog.products=[];catalog.promotions=[];catalog.news=[];catalog.notifications=[];catalog.events=[];catalog.event={};videoData=null;render();loadEventFields();removeVideo=true;updateDraftStatus();alert("Contenido borrado de la vista previa. Pulsa PUBLICAR TODOS LOS CAMBIOS para confirmar.")};
 document.querySelectorAll("[data-admin-tab]").forEach(b=>b.onclick=()=>{document.querySelectorAll("[data-admin-tab]").forEach(x=>x.classList.toggle("selected",x===b));document.querySelectorAll("[data-admin-page]").forEach(x=>x.hidden=x.dataset.adminPage!==b.dataset.adminTab);if(b.dataset.adminTab==="hours"&&catalog){renderWeeklyHours(catalog.about?.weeklyHours||defaultWeeklySchedule());$("#weekly-hours").style.display="grid"}if(b.dataset.adminTab==="dashboard")renderDashboard()});
 $("#dashboard-refresh").onclick=renderDashboard;
