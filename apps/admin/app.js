@@ -111,13 +111,13 @@ try{
  for(const p of catalog.products||[]){if(p._photo){p.image=await uploadImageAsset("product-"+p.id,p._photo);delete p._photo}}
  // Upload the main event cover and its gallery.
  catalog.event=catalog.event||{};
- if(eventCoverFile)catalog.event.image=await uploadImageAsset("event-cover",eventCoverFile);
- if(eventGalleryFiles.length){const urls=[];for(let i=0;i<eventGalleryFiles.length;i++)urls.push(await uploadImageAsset("event-gallery",eventGalleryFiles[i],i));catalog.event.images=[...(catalog.event.images||[]),...urls]}
+ if(eventCoverFile){catalog.event.image=await uploadImageAsset("event-cover",eventCoverFile);eventCoverFile=null;$("#event-image").value=catalog.event.image;$("#event-image-file").value="";renderMediaPreview("event-image-preview",[catalog.event.image])}
+ if(eventGalleryFiles.length){const pending=eventGalleryFiles.slice();eventGalleryFiles=[];catalog.event.images=catalog.event.images||[];for(let i=0;i<pending.length;i++){try{const url=await uploadImageAsset("event-gallery",pending[i],i);catalog.event.images.push(url);$("#event-gallery").value=catalog.event.images.join(", ")}catch(error){eventGalleryFiles=pending.slice(i);throw error}}$("#event-gallery-files").value="";renderMediaPreview("event-gallery-preview",catalog.event.images)}
  // Upload images staged on promotions and news.
  for(const p of catalog.promotions||[]){if(p._imageFile){p.image=await uploadImageAsset("promotion-"+p.id,p._imageFile);delete p._imageFile}}
  for(const n of catalog.news||[]){if(n._imageFile){n.image=await uploadImageAsset("news-"+n.id,n._imageFile);delete n._imageFile}}
  // Upload covers and gallery images for individual archived/upcoming events.
- for(const e of catalog.events||[]){if(e._imageFile){e.image=await uploadImageAsset("event-"+e.id,e._imageFile);delete e._imageFile}if(e._galleryFiles?.length){const urls=[];for(let i=0;i<e._galleryFiles.length;i++)urls.push(await uploadImageAsset("event-gallery-"+e.id,e._galleryFiles[i],i));e.images=[...(e.images||[]),...urls];delete e._galleryFiles}}
+ for(const e of catalog.events||[]){if(e._imageFile){e.image=await uploadImageAsset("event-"+e.id,e._imageFile);delete e._imageFile}if(e._galleryFiles?.length){const pending=e._galleryFiles.slice();e._galleryFiles=[];e.images=e.images||[];for(let i=0;i<pending.length;i++){try{e.images.push(await uploadImageAsset("event-gallery-"+e.id,pending[i],i))}catch(error){e._galleryFiles=pending.slice(i);throw error}}}}
  if(videoData)catalog.event.video=await uploadFile("apps/customer/assets/event-video.mp4",videoData,"Reemplazar vídeo del evento Butterfly Café");
  else if(removeVideo)delete catalog.event.video;
  // Never serialize editor-only fields or base64 preview payloads.
@@ -138,7 +138,7 @@ try{
  alert("¡Cambios publicados! 🦋");
 }catch(e){
  const message=String(e?.message||e);
- if(message.includes("CONFLICT")){status("Conflicto de publicación: el catálogo remoto cambió. El borrador se conservó.");alert(message+"\n\nCopia tus cambios importantes y vuelve a conectar para cargar la última versión.")}
+ if(message.includes("CONFLICT")||/\\b(409|422)\\b/.test(message)){status("Conflicto de publicación: el catálogo remoto cambió. El borrador se conservó.");alert("GitHub rechazó la publicación porque la revisión del catálogo ya no coincide. No se sobrescribieron los datos del otro administrador.\n\nTus cambios permanecen en este panel. Vuelve a conectar, compara los cambios y publica de nuevo.");}
  else{status("No se pudo publicar: "+message);alert("Error al publicar: "+message+"\n\nComprueba el token y el permiso Contents: Read and write.")}
 }finally{publishing=false;btn.disabled=false;btn.textContent="Sí, publicar cambios"}
 }
