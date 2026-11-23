@@ -43,6 +43,14 @@ jobs:
           const pageErrors = [];
           page.on('pageerror', e => pageErrors.push(e.message));
           await page.goto('http://127.0.0.1:4173/apps/customer/', {waitUntil:'networkidle'});
+          await page.waitForSelector('[data-add-cart="cappuccino"]');
+          await page.locator('[data-add-cart="cappuccino"]').click();
+          await page.locator('#cart-open').waitFor({state:'visible'});
+          await page.locator('#cart-open').click();
+          await page.locator('#cart-dialog[open]').waitFor();
+          if (!(await page.locator('#cart-content').innerText()).includes('Cappuccino')) throw new Error('Customer cart did not show the selected product.');
+          await page.locator('#cart-clear').click();
+          await page.locator('[data-cart-close]').click();
           await page.screenshot({path:'butterfly-cafe-cliente.png',fullPage:true});
           await page.goto('http://127.0.0.1:4173/apps/admin/', {waitUntil:'networkidle'});
           await page.waitForFunction(() => document.querySelector('#metric-products')?.textContent === '4');
@@ -88,9 +96,58 @@ jobs:
           await page.locator('[data-admin-tab="history"]').click();
           if (!(await page.locator('#publication-history-list').innerText()).includes('Todavía no hay publicaciones')) throw new Error('Publication history screen did not render its empty state.');
           await page.locator('[data-admin-tab="push"]').click();
-          await page.locator('#push-public-key').fill('BTEST_PUBLIC_VAPID_KEY');
-          await page.locator('#push-endpoint').fill('https://push.example.test/subscriptions');
-          if (!(await page.locator('#push-config-status').innerText()).includes('Configuración introducida')) throw new Error('Push configuration readiness did not update.');
+          await page.locator('#backend-api-url').fill('https://api.example.test');
+          await page.locator('#orders-api-token').fill('playwright-admin-api-token-12345678901234567890');
+          await page.locator('#save-api-settings').click();
+          if (!(await page.locator('#push-config-status').innerText()).includes('URL del servidor válida')) throw new Error('Backend HTTPS URL validation did not update.');
+
+          // Mock the Worker API to smoke-test order management, sales and push administration.
+          let apiPatchRequests = 0, apiPushRequests = 0;
+          await page.route('https://api.example.test/**', async route => {
+            const request = route.request(), url = new URL(request.url());
+            if (url.pathname === '/api/admin/orders' && request.method() === 'GET') {
+              return route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({orders:[{
+                id:'order-test-1',order_number:'BC-TEST-0001',created_at:'2026-11-23T12:00:00.000Z',
+                customer_name:'Cliente Playwright',customer_phone:'+15555550100',customer_notes:'Sin azúcar',
+                order_status:'pending',payment_status:'unpaid',subtotal_cents:550,currency:'USD',
+                items:[{productId:'cappuccino',productName:'Cappuccino',quantity:1,unitPrice:5.5,lineTotal:5.5}]
+              }]})});
+            }
+            if (url.pathname === '/api/admin/orders/order-test-1' && request.method() === 'PATCH') {
+              apiPatchRequests++;
+              return route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({order:{id:'order-test-1'}})});
+            }
+            if (url.pathname === '/api/admin/stats' && request.method() === 'GET') {
+              return route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({
+                from:'2026-11-01',to:'2026-11-23',currency:'USD',orderCount:3,paidOrderCount:2,
+                unpaidOrderCount:1,completedOrderCount:1,revenue:11,
+                topProducts:[{product_name:'Cappuccino',units_sold:2,revenue:11}],
+                daily:[{day:'2026-11-23',paid_orders:2,revenue_cents:1100}]
+              })});
+            }
+            if (url.pathname === '/api/admin/push/send' && request.method() === 'POST') {
+              apiPushRequests++;
+              return route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({success:true,result:{webSent:1,nativeSent:0,failed:0,total:1}})});
+            }
+            return route.fulfill({status:404,contentType:'application/json',body:'{"error":"Not found"}'});
+          });
+          await page.locator('[data-admin-tab="orders"]').click();
+          await page.locator('.order-card').waitFor();
+          if (!(await page.locator('#orders-list').innerText()).includes('Cliente Playwright')) throw new Error('Admin did not render the test order.');
+          await page.locator('[data-order-status]').selectOption('ready');
+          await page.locator('[data-payment-status]').selectOption('paid');
+          await page.locator('[data-order-save]').click();
+          await page.waitForFunction(() => document.querySelector('.order-card-status')?.textContent.includes('Cambios guardados'));
+          if (apiPatchRequests !== 1) throw new Error('Admin order status update was not sent.');
+          await page.locator('[data-admin-tab="sales"]').click();
+          await page.waitForFunction(() => document.querySelector('#sales-revenue')?.textContent.includes('11.00'));
+          if (!(await page.locator('#sales-top-products').innerText()).includes('Cappuccino')) throw new Error('Sales top-product data was not displayed.');
+          await page.locator('[data-admin-tab="push"]').click();
+          await page.locator('#push-send-title').fill('Playwright notice');
+          await page.locator('#push-send-body').fill('Testing admin push workflow.');
+          await page.locator('#push-send').click();
+          await page.waitForFunction(() => document.querySelector('#push-send-status')?.textContent.includes('1 Web Push'));
+          if (apiPushRequests !== 1) throw new Error('Admin push send request was not sent.');
 
           // Verify optimistic concurrency: a changed catalog SHA must block the write.
           let mode = 'conflict', catalogReads = 0, putRequests = 0, mediaPutRequests = 0, catalogPutRequests = 0, publishedCatalog = null;
