@@ -107,6 +107,7 @@ jobs:
             return route.fulfill({status:404,contentType:'application/json',body:'{"message":"Not found"}'});
           });
           page.on('dialog', dialog => dialog.accept());
+          await page.locator('.settings summary').click();
           await page.locator('#token').fill('playwright-test-token');
           await page.locator('#connect').click();
           await page.waitForFunction(() => document.querySelector('#status')?.textContent.includes('Conexión correcta'));
