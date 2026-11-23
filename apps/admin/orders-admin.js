@@ -67,6 +67,12 @@
           status.textContent = "Cambios guardados ✓";
           status.classList.remove("error");
           await loadOrders();
+          const refreshedCard = Array.from(document.querySelectorAll(".order-card")).find(item => item.dataset.orderId === id);
+          if (refreshedCard) {
+            const refreshedStatus = refreshedCard.querySelector(".order-card-status");
+            refreshedStatus.textContent = "Cambios guardados ✓";
+            refreshedStatus.classList.remove("error");
+          }
           await loadSales();
         } catch (error) {
           status.textContent = error.message || "No se pudo guardar el pedido.";
