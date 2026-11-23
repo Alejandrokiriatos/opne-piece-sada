@@ -120,6 +120,7 @@ async function createOrder(request, env) {
   if (existing) return asJson({ success: true, duplicate: true, order: existing });
 
   const catalog = await getCatalog(env);
+  if (catalog.orders?.enabled !== true) return asJson({ error: "La recepción de pedidos todavía no está habilitada por la cafetería." }, 503);
   const requested = new Map();
   for (const item of input.items) {
     const productId = String(item.productId || "").trim().slice(0, 100);
