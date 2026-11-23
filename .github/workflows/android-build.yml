@@ -41,7 +41,7 @@ jobs:
           if [ "${{ matrix.app }}" = "admin" ]; then npx esbuild token-storage.js --bundle --format=iife --outfile=www/token-storage.bundle.js; fi
           cp -R assets www/assets
           printf 'window.BC_APP_VERSION=%s;window.BC_APP_NAME="%s";\n' "$GITHUB_RUN_NUMBER" "${{ matrix.app }}" > www/build-info.js
-          sed -i 's|<script src="app-update.js"></script>|<script src="build-info.js"></script><script src="app-update.bundle.js"></script>|' www/index.html
+          sed -i 's|<script type="module" src="app-update.js"></script>|<script src="build-info.js"></script><script src="app-update.bundle.js"></script>|' www/index.html
           npx cap add android
           npx cap sync android
           # Add native APK installation so the app downloads in-place and opens Android's installer.

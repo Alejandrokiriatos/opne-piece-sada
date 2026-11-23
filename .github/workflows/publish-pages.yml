@@ -27,10 +27,22 @@ jobs:
           mkdir -p public/customer public/admin
           cp -R apps/customer/. public/customer/
           cp -R apps/admin/. public/admin/
-      - uses: actions/configure-pages@v5
-      - uses: actions/upload-pages-artifact@v3
+      - name: Configure GitHub Pages when the repository has been enabled
+        id: pages
+        uses: actions/configure-pages@v5
+        continue-on-error: true
+      - name: Keep a downloadable copy of the web apps
+        uses: actions/upload-artifact@v4
+        with:
+          name: butterfly-cafe-web-apps
+          path: public
+          retention-days: 14
+      - name: Upload Pages artifact
+        if: steps.pages.outcome == 'success'
+        uses: actions/upload-pages-artifact@v3
         with:
           path: public
       - name: Deploy
         id: deployment
+        if: steps.pages.outcome == 'success'
         uses: actions/deploy-pages@v4
