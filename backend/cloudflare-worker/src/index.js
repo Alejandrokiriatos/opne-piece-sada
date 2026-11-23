@@ -314,7 +314,7 @@ async function sendFcm(env, token, notification, data) {
   const body = await response.json().catch(() => ({}));
   if (!response.ok) {
     const errorText = JSON.stringify(body);
-    if (response.status === 404 || errorText.includes("UNREGISTERED") || errorText.includes("INVALID_ARGUMENT")) {
+    if (response.status === 404 || errorText.includes("UNREGISTERED")) {
       await env.DB.prepare("DELETE FROM native_push_tokens WHERE token = ?").bind(token).run();
     }
     throw new Error("FCM HTTP " + response.status);
@@ -361,6 +361,7 @@ async function registerWebSubscription(request, env) {
   const input = await readJson(request, 16 * 1024);
   const subscription = input.subscription;
   const appId = input.appId === "admin" ? "admin" : "customer";
+  if (appId === "admin") { const denied = requireAdmin(request, env); if (denied) return denied; }
   if (!subscription?.endpoint || !subscription?.keys?.p256dh || !subscription?.keys?.auth) return asJson({ error: "Suscripción web incompleta." }, 400);
   if (!String(subscription.endpoint).startsWith("https://")) return asJson({ error: "El endpoint debe utilizar HTTPS." }, 400);
   const timestamp = nowIso();
@@ -373,6 +374,7 @@ async function registerNativeToken(request, env) {
   const input = await readJson(request, 8 * 1024);
   const token = String(input.token || "").trim();
   const appId = input.appId === "admin" ? "admin" : "customer";
+  if (appId === "admin") { const denied = requireAdmin(request, env); if (denied) return denied; }
   const platform = String(input.platform || "android").slice(0, 20);
   if (token.length < 40 || token.length > 4096) return asJson({ error: "Token de notificación inválido." }, 400);
   const timestamp = nowIso();
@@ -418,6 +420,10 @@ async function handleRequest(request, env) {
   return asJson({ error: "Ruta no encontrada." }, 404);
 }
 export default {
+  async scheduled(controller, env, ctx) {
+    ctx.waitUntil(env.DB.prepare("DELETE FROM public_rate_limits WHERE created_at < ?")
+      .bind(new Date(Date.now() - 48 * 60 * 60_000).toISOString()).run());
+  },
   async fetch(request, env) {
     try {
       if (request.headers.has("Origin") && !allowedOrigin(request, env)) return asJson({ error: "Origen no permitido." }, 403);
