@@ -24,7 +24,7 @@ function env(extra = {}) {
 }
 
 test("health endpoint responds without database activity", async () => {
-  const response = await worker.fetch(new Request("https://api.example.test/health"));
+  const response = await worker.fetch(new Request("https://api.example.test/health"), env());
   assert.equal(response.status, 200);
   const body = await response.json();
   assert.equal(body.ok, true);
