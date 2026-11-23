@@ -48,11 +48,13 @@
     <button class="nav-item" data-view="events"><span>🎉</span><small>Eventos</small></button>
     <button class="nav-item" data-view="about"><span>♡</span><small>Sobre nosotros</small></button>
   </nav>
+  <button id="cart-open" class="cart-fab" type="button" aria-label="Abrir mi pedido" hidden>🛍️ <span>Mi pedido</span><b id="cart-count">0</b><strong id="cart-total">$0.00</strong></button>
+  <dialog id="cart-dialog" class="cart-dialog"><div class="cart-dialog-head"><div><span class="eyebrow">BUTTERFLY CAFÉ</span><h2>Mi pedido</h2></div><button type="button" data-cart-close aria-label="Cerrar">×</button></div><div id="cart-content"></div><form id="checkout-form"><h3>Datos para recoger</h3><label>Nombre<input id="order-customer-name" autocomplete="name" maxlength="100" required></label><label>Teléfono<input id="order-customer-phone" type="tel" autocomplete="tel" minlength="7" maxlength="40" required></label><label>Notas para la cafetería (opcional)<textarea id="order-customer-notes" rows="2" maxlength="400" placeholder="Sin azúcar, leche vegetal..."></textarea></label><p class="checkout-note">El pedido se paga al recogerlo en la cafetería. No se realiza ningún cobro desde esta aplicación.</p><button id="order-submit" class="checkout-submit" type="submit">Enviar pedido</button><p id="order-status" class="order-status" role="status"></p></form><button id="cart-clear" class="cart-clear" type="button">Vaciar pedido</button></dialog>
   <dialog id="product-dialog" class="detail-dialog"><div id="product-detail"></div><button class="dialog-close" type="button" data-close-dialog>Cerrar</button></dialog>
   <dialog id="image-dialog" class="image-dialog"><button class="image-close" type="button" data-close-dialog aria-label="Cerrar">×</button><img id="expanded-image" alt="Fotografía ampliada"></dialog>
   <div id="toast" role="status"></div>
 </div>
 <script type="module" src="app-update.js"></script>
-<script src="app.js"></script>
+<script src="app.js"></script>\n<script src="orders-client.js"></script>
 </body>
 </html>
