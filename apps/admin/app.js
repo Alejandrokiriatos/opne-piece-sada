@@ -183,7 +183,7 @@ try{
  videoData=null;removeVideo=false;eventCoverFile=null;eventGalleryFiles=[];promoImageFile=null;newsImageFile=null;archiveImageFile=null;archiveGalleryFiles=[];
  original=JSON.parse(JSON.stringify(catalog));
  $("#publish-confirm").close();status("¡Publicado! El catálogo y el historial se guardaron correctamente. ✓",true);
- render();loadEventFields();loadAboutFields();loadPushFields();loadOrdersSettings();updateDraftStatus();
+ render();loadEventFields();loadAboutFields();loadPushFields();updateDraftStatus();
  alert("¡Cambios publicados! 🦋");
 }catch(e){
  const message=String(e?.message||e);
@@ -204,5 +204,5 @@ document.querySelectorAll("[data-preview-view]").forEach(b=>b.onclick=()=>render
 $("#customer-preview-dialog").querySelector("[data-preview-close]").onclick=()=>$("#customer-preview-dialog").close();
 document.querySelectorAll("[data-admin-page] input,[data-admin-page] textarea").forEach(el=>el.addEventListener("input",updateDraftStatus));
 $("#connect").onclick=check;$("#publish").onclick=showPublishConfirmation;$("#cancel-publish").onclick=()=>$("#publish-confirm").close();$("#accept-publish").onclick=publish;$("#history-refresh").onclick=renderPublicationHistory;
-async function initializeAdmin(){await restoreBackendAdminToken();let restored=false;try{if(window.BCSecureToken){const saved=await window.BCSecureToken.getToken();if(saved&&saved.token){$("#token").value=saved.token;restored=true;await check();}}}catch(e){console.warn("No se pudo recuperar el token seguro",e)}if(!restored){fetch("../../data/catalog.json",{cache:"no-store"}).then(r=>r.json()).then(d=>{if(!catalog){catalog=d;ensureContentArrays();original=JSON.parse(JSON.stringify(d));render();loadEventFields();loadAboutFields();loadPushFields();loadOrdersSettings();status("Vista previa. Conecta GitHub para guardar el token de forma segura.");updateDraftStatus()}}).catch(e=>console.warn(e))}}
+async function initializeAdmin(){await restoreBackendAdminToken();let restored=false;try{if(window.BCSecureToken){const saved=await window.BCSecureToken.getToken();if(saved&&saved.token){$("#token").value=saved.token;restored=true;await check();}}}catch(e){console.warn("No se pudo recuperar el token seguro",e)}if(!restored){fetch("../../data/catalog.json",{cache:"no-store"}).then(r=>r.json()).then(d=>{if(!catalog){catalog=d;ensureContentArrays();original=JSON.parse(JSON.stringify(d));render();loadEventFields();loadAboutFields();loadPushFields();status("Vista previa. Conecta GitHub para guardar el token de forma segura.");updateDraftStatus()}}).catch(e=>console.warn(e))}}
 initializeAdmin();
