@@ -101,12 +101,12 @@ jobs:
           await page.locator('[data-view="coffee"]').click();
           await page.locator('[data-product]').first().click();
           await page.locator('#product-dialog[open]').waitFor();
-          await page.locator('[data-close-dialog]').click();
+          await page.locator('#product-dialog [data-close-dialog]').click();
           await page.locator('[data-view="home"]').click();
           await page.locator('[data-promotion]').first().click();
           await page.locator('#promotion-dialog[open]').waitFor();
           if (!(await page.locator('#promotion-detail').innerText()).includes('PROMOCIÓN')) throw new Error('Promotion details did not open.');
-          await page.locator('[data-close-dialog]').click();
+          await page.locator('#promotion-dialog [data-close-dialog]').click();
           await page.locator('[data-view="home"]').click();          await page.screenshot({path:'butterfly-cafe-cliente.png',fullPage:true});
           await page.goto('http://127.0.0.1:4173/apps/admin/', {waitUntil:'networkidle'});
           await page.waitForFunction(() => document.querySelector('#metric-products')?.textContent === '4');
