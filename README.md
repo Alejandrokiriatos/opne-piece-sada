@@ -5,7 +5,7 @@ Repositorio de las dos aplicaciones Android y el backend:
 - `apps/customer`: Butterfly Café para clientes.
 - `apps/admin`: BC Admin para administración.
 - `data/catalog.json`: catálogo remoto compartido.
-- `backend/cloudflare-worker`: API de pedidos, ventas y notificaciones.
+- `backend/cloudflare-worker`: API de notificaciones y servicios heredados.
 - `backend/cloudflare-worker/migrations`: esquema SQLite para Cloudflare D1.
 
 ## Butterfly Café — clientes
@@ -15,8 +15,10 @@ Repositorio de las dos aplicaciones Android y el backend:
 - Fichas de producto con fotografía, ingredientes, precio y disponibilidad.
 - Eventos actuales, futuros y anteriores con fotografías y vídeos.
 - Información del negocio, horarios, dirección, Google Maps y WhatsApp.
-- Centro de avisos dentro de la aplicación.
-- Carrito persistente y pedidos para recoger. El cliente proporciona nombre, teléfono y notas; el servidor recalcula los precios desde el catálogo publicado. La aplicación no procesa pagos en línea.
+- Centro de avisos dentro de la aplicación, con actualizaciones automáticas de productos y horarios.
+- Pantalla de ajustes para preferencias de avisos y comprobación manual de actualizaciones.
+- Promociones interactivas con ficha ampliada, fotografía, descripción y vigencia.
+- La APK funciona como catálogo informativo: no ofrece carrito, pedidos ni pagos.
 
 ## BC Admin — administración
 
@@ -25,8 +27,7 @@ Repositorio de las dos aplicaciones Android y el backend:
 - Subida y compresión de fotografías antes de guardarlas en el repositorio.
 - Panel de resumen del contenido, vista previa y registro de publicaciones.
 - Protección contra publicaciones concurrentes mediante el SHA del catálogo.
-- Bandeja de pedidos: datos del pedido, productos, notas, estado del pedido y estado del pago.
-- Informe de ventas con rango de fechas, ingresos cobrados, pedidos pagados, pendientes, productos más vendidos y resultados diarios.
+- Generación automática de avisos al publicar cambios en productos o horarios.
 - Configuración de la API y envío de notificaciones.
 
 ## Backend — Cloudflare Workers + D1
@@ -39,19 +40,15 @@ Rutas principales:
 |---|---|---|
 | `GET /health` | Estado del servicio | Pública |
 | `GET /api/push/config` | Clave pública y capacidades push | Pública |
-| `POST /api/orders` | Registrar pedido para recoger | Pública, validación de catálogo, límite de solicitudes e idempotencia |
+| `POST /api/orders` | Ruta heredada, no utilizada por las APK informativas | Pública, validación de catálogo, límite de solicitudes e idempotencia |
 | `POST /api/push/web/subscribe` | Registrar suscripción Web Push | Pública para clientes; requiere token si el destino es Admin |
 | `POST /api/push/native/register` | Registrar token de Android | Pública para clientes; requiere token si el destino es Admin |
-| `GET /api/admin/orders` | Consultar pedidos | Token administrativo |
-| `PATCH /api/admin/orders/:id` | Cambiar estado del pedido o del pago | Token administrativo |
-| `GET /api/admin/stats` | Estadísticas de pedidos y ventas | Token administrativo |
+| Rutas `/api/admin/orders` y `/api/admin/stats` | Compatibilidad con datos anteriores; ya no aparecen en BC Admin | Token administrativo |
 | `POST /api/admin/push/send` | Enviar notificación | Token administrativo |
 
-### Qué contabilizan las ventas
+### Pedidos y ventas
 
-Los informes distinguen pedidos recibidos, pagados, pendientes de cobro y completados. Los ingresos y productos vendidos se calculan únicamente a partir de pedidos marcados como **pagados** y que no estén cancelados. BC Admin no inventa ventas ni considera que un pedido enviado sea automáticamente una venta cobrada.
-
-Los pedidos creados desde la aplicación se guardan inicialmente como `pending` y `unpaid`. El personal de la cafetería confirma el cobro desde BC Admin cuando recibe el pago al recoger el pedido. La integración actual no incluye pasarela de pago en línea. La recepción de pedidos está **desactivada inicialmente** tanto en el catálogo como en el servidor. El administrador debe revisar y corregir los precios reales, activar el interruptor “Activar recepción de pedidos de clientes” en BC Admin y publicar el catálogo para empezar a aceptar pedidos.
+La interfaz actual de Butterfly Café es exclusivamente informativa. Los módulos de pedidos y ventas se retiraron de las APK; las rutas y tablas antiguas del Worker se conservan temporalmente por compatibilidad, pero la aplicación cliente no crea pedidos ni pagos.
 
 ### Controles de seguridad
 
@@ -105,7 +102,7 @@ Para habilitar FCM en los APK:
 4. Añade `FCM_SERVICE_ACCOUNT_JSON` como secreto del Worker, con el JSON de la cuenta de servicio Firebase que tenga permiso para enviar mensajes.
 5. Vuelve a compilar las aplicaciones. El workflow valida el package ID del archivo Firebase y solo activa FCM en la APK que tiene su configuración.
 
-La app conserva una activación explícita de avisos. Después de instalar una APK configurada con Firebase, abre BC Admin → Push y registra este teléfono para recibir nuevos pedidos. Los clientes pueden activar los avisos desde el centro de notificaciones.
+La app conserva una activación explícita de avisos. Después de instalar una APK configurada con Firebase, abre BC Admin → Push y registra el teléfono administrativo. Los clientes pueden activar los avisos push desde Notificaciones o Ajustes. Los avisos generados automáticamente por cambios de catálogo se muestran dentro de la aplicación en cuanto se descarga la versión publicada.
 
 Sin estos archivos y secretos reales, la interfaz y el código quedan preparados, pero no se puede enviar una notificación push real. Nunca se suben los JSON de Firebase ni las claves privadas al repositorio.
 
