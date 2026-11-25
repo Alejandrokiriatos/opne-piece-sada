@@ -10,12 +10,31 @@ function toast(message){const el=$("#toast");el.textContent=message;el.style.dis
 function categoryName(id){return (catalog?.categories||[]).find(c=>c.id===id)?.name||id||""}
 function typeOfProduct(p){const cat=(catalog?.categories||[]).find(c=>c.id===p.category)||{};const group=String(cat.group||cat.type||p.type||"").toLowerCase();if(/^(sweet|dessert)$/.test(group))return "sweet";if(/^(coffee|drink)$/.test(group))return "coffee";const key=(String(p.category||"")+" "+categoryName(p.category)+" "+group).toLowerCase();if(/dulce|postre|pastel|repost|sweet|dessert|bakery|helado/.test(key))return "sweet";if(/cafe|café|coffee|espresso|frappe|frappé|batido|té|tea/.test(key))return "coffee";return "other"}
 function visibleProducts(){return (catalog?.products||[]).filter(p=>p.active!==false)}
-function productCard(p){const sold=p.available===false||p.stock===0;return '<article class="product '+(sold?'sold-out':'')+'"><button type="button" class="product-image-button" data-image="'+escapeHtml(p.id)+'" aria-label="Ampliar '+escapeHtml(p.name)+'"><img src="'+escapeHtml(safeUrl(p.image)||"assets/butterfly-cafe-logo.svg")+'" alt="'+escapeHtml(p.name)+'" loading="lazy"></button><button class="product-open" type="button" data-product="'+escapeHtml(p.id)+'"><h3>'+escapeHtml(p.name)+'</h3><p>'+escapeHtml(p.description||"")+'</p><div class="product-meta"><span class="price">'+money(p.price)+'</span>'+(sold?'<span class="sold-label">Agotado</span>':'<span class="detail-label">Ver detalles ↗</span>')+'</div></button>'+(sold?'<button class="product-add" type="button" disabled>Agotado</button>':'<button class="product-add" type="button" data-add-cart="'+escapeHtml(p.id)+'">＋ Añadir</button>')+'</article>'}
-function recordNotification(title,message,key){if(notifications.some(n=>n.key===key))return;notifications.unshift({title,message,key,date:new Date().toISOString()});notifications=notifications.slice(0,30);localStorage.setItem("bc-notifications",JSON.stringify(notifications));updateNotificationBadge();if(document.visibilityState==="visible"&&("Notification"in window)&&Notification.permission==="granted"){try{new Notification(title,{body:message,icon:"assets/butterfly-cafe-logo.svg"})}catch{}}}
+function productCard(p){
+  const sold=p.available===false||p.stock===0;
+  return '<article class="product '+(sold?'sold-out':'')+'">'+
+    '<button type="button" class="product-image-button" data-image="'+escapeHtml(p.id)+'" aria-label="Ampliar '+escapeHtml(p.name)+'"><img src="'+escapeHtml(safeUrl(p.image)||"assets/butterfly-cafe-logo.svg")+'" alt="'+escapeHtml(p.name)+'" loading="lazy"></button>'+
+    '<button class="product-open" type="button" data-product="'+escapeHtml(p.id)+'"><h3>'+escapeHtml(p.name)+'</h3><p>'+escapeHtml(p.description||"")+'</p><div class="product-meta"><span class="price">'+money(p.price)+'</span>'+(sold?'<span class="sold-label">Agotado</span>':'<span class="detail-label">Ver detalles ↗</span>')+'</div></button>'+
+    '</article>';
+}
+function recordNotification(title,message,key){if(notifications.some(n=>n.key===key))return;notifications.unshift({title,message,key,date:new Date().toISOString()});notifications=notifications.slice(0,30);localStorage.setItem("bc-notifications",JSON.stringify(notifications));updateNotificationBadge();if(localStorage.getItem("bc-popup-notifications")!=="false"&&document.visibilityState==="visible"&&("Notification"in window)&&Notification.permission==="granted"){try{new Notification(title,{body:message,icon:"assets/butterfly-cafe-logo.svg"})}catch{}}}
 function restoreNotifications(){try{notifications=JSON.parse(localStorage.getItem("bc-notifications")||"[]");if(!Array.isArray(notifications))notifications=[]}catch{notifications=[]}updateNotificationBadge()}
 function updateNotificationBadge(){const badge=$("#notification-count");const count=notifications.length;badge.hidden=count===0;badge.textContent=count>9?"9+":String(count)}
 function showNotifications(){view="notifications";showAll=false;render();document.querySelectorAll("[data-view]").forEach(b=>b.classList.remove("active"));window.scrollTo({top:0,behavior:"smooth"})}
-function renderPromo(){const today=new Date().toISOString().slice(0,10);const all=(catalog?.promotions||[]).filter(p=>p.active!==false&&(!p.validUntil||p.validUntil>=today));const section=$("#promotions-section");section.hidden=all.length===0;if(!all.length)return;promoIndex=((promoIndex%all.length)+all.length)%all.length;const p=all[promoIndex];const image=safeUrl(p.image);$("#promotions-list").innerHTML='<article class="promo-slide">'+(image?'<img src="'+escapeHtml(image)+'" alt="'+escapeHtml(p.title||"Promoción")+'">':'')+'<div><span class="winner-label">✨ PROMOCIÓN</span><h3>'+escapeHtml(p.title||"Oferta especial")+'</h3><p>'+escapeHtml(p.description||"")+'</p>'+(p.validUntil?'<small>Válido hasta '+escapeHtml(p.validUntil)+'</small>':'')+'</div></article>';$("#promo-dots").innerHTML=all.map((_,i)=>'<button type="button" data-promo-dot="'+i+'" class="'+(i===promoIndex?'active':'')+'" aria-label="Promoción '+(i+1)+'"></button>').join("")}
+function renderPromo(){
+  const today=new Date().toISOString().slice(0,10);
+  const all=(catalog?.promotions||[]).filter(p=>p.active!==false&&(!p.validUntil||p.validUntil>=today));
+  const section=$("#promotions-section");
+  section.hidden=all.length===0;
+  if(!all.length)return;
+  promoIndex=((promoIndex%all.length)+all.length)%all.length;
+  const p=all[promoIndex],image=safeUrl(p.image);
+  $("#promotions-list").innerHTML='<article class="promo-slide promo-open" data-promotion="'+escapeHtml(p.id)+'" tabindex="0" role="button" aria-label="Ver detalles de '+escapeHtml(p.title||"Promoción")+'">'+
+    (image?'<img src="'+escapeHtml(image)+'" alt="'+escapeHtml(p.title||"Promoción")+'">':'')+
+    '<div><span class="winner-label">✨ PROMOCIÓN</span><h3>'+escapeHtml(p.title||"Oferta especial")+'</h3><p>'+escapeHtml(p.description||"")+'</p>'+(p.validUntil?'<small>Válido hasta '+escapeHtml(p.validUntil)+'</small>':'')+
+    '<span class="promo-detail-hint">Toca para ver los detalles ↗</span></div></article>';
+  $("#promo-dots").innerHTML=all.map((_,i)=>'<button type="button" data-promo-dot="'+i+'" class="'+(i===promoIndex?'active':'')+'" aria-label="Promoción '+(i+1)+'"></button>').join("");
+}
 function renderNews(){const items=(catalog?.news||[]).filter(n=>n.active!==false).slice(0,5);$("#news-section").hidden=items.length===0;$("#news-list").innerHTML=items.map(n=>'<article class="news-card">'+(safeUrl(n.image)?'<img src="'+escapeHtml(safeUrl(n.image))+'" alt="">':'')+'<div><b>'+escapeHtml(n.title||"Novedad")+'</b><p>'+escapeHtml(n.description||"")+'</p>'+(n.date?'<small>'+escapeHtml(n.date)+'</small>':'')+'</div></article>').join("")}
 function renderFilters(items){const cats=(catalog?.categories||[]).filter(c=>items.some(p=>p.category===c.id));const el=$("#category-filters");el.hidden=!["coffee","sweets"].includes(view);if(el.hidden){el.replaceChildren();return}const choices=[{id:"all",name:"Todos"},...cats];el.innerHTML=choices.map(c=>'<button type="button" data-filter="'+escapeHtml(c.id)+'" class="'+(categoryFilter===c.id?'active':'')+'">'+escapeHtml(c.name)+'</button>').join("")}
 function renderProducts(products){const q=$("#search").value.trim().toLowerCase();let items=products.filter(p=>[p.name,p.description,p.ingredients,categoryName(p.category)].join(" ").toLowerCase().includes(q));if(view==="coffee")items=items.filter(p=>typeOfProduct(p)==="coffee");if(view==="sweets")items=items.filter(p=>typeOfProduct(p)==="sweet");if(["coffee","sweets"].includes(view)&&categoryFilter!=="all")items=items.filter(p=>p.category===categoryFilter);
@@ -30,18 +49,112 @@ function getBackendApiBase(){const raw=String(catalog?.backend?.apiBaseUrl||cata
 let nativePushListenersReady=false;
 async function registerNativePush(){if(window.BC_FCM_ENABLED!==true){toast("Las notificaciones nativas todavía necesitan que Firebase se configure para esta APK.");return}const apiBase=getBackendApiBase();if(!apiBase){toast("BC Admin debe configurar primero la dirección del servidor de Butterfly Café.");return}const native=await import("@capacitor/push-notifications");const PushNotifications=native.PushNotifications;if(!nativePushListenersReady){nativePushListenersReady=true;await PushNotifications.addListener("registration",async token=>{try{const response=await fetch(apiBase+"/api/push/native/register",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({appId:"customer",platform:"android",token:token.value})});if(!response.ok)throw Error("HTTP "+response.status);toast("Este teléfono quedó registrado para recibir avisos.")}catch(error){nativePushListenersReady=false;console.error("No se pudo guardar el token FCM",error);toast("No se pudo registrar el teléfono en el servidor.")}});await PushNotifications.addListener("registrationError",error=>{nativePushListenersReady=false;console.error("FCM registration error",error);toast("Android no pudo registrar las notificaciones. Comprueba la configuración Firebase.")});await PushNotifications.addListener("pushNotificationReceived",notification=>{recordNotification(notification.title||"Butterfly Café",notification.body||"Tienes un nuevo aviso.","fcm-"+(notification.id||Date.now()));toast(notification.title||"Nuevo aviso de Butterfly Café")});await PushNotifications.addListener("pushNotificationActionPerformed",()=>{showNotifications()})}let permission=await PushNotifications.checkPermissions();if(permission.receive!=="granted")permission=await PushNotifications.requestPermissions();if(permission.receive!=="granted"){toast("No se concedió permiso para recibir notificaciones.");return}await PushNotifications.createChannel({id:"butterfly_updates",name:"Avisos de Butterfly Café",description:"Pedidos, promociones y novedades",importance:5,sound:"default",visibility:1,vibration:true});await PushNotifications.register();toast("Solicitando registro de notificaciones a Android…")}
 async function enablePushNotifications(){const apiBase=getBackendApiBase();if(!apiBase){toast("BC Admin debe configurar primero el servidor de pedidos y notificaciones.");return}if(window.Capacitor?.isNativePlatform?.()){await registerNativePush();return}if(!("serviceWorker"in navigator)||!("PushManager"in window)||!("Notification"in window)){toast("Este dispositivo no admite Web Push. Puedes seguir viendo los avisos dentro de la aplicación.");return}const permission=await Notification.requestPermission();if(permission!=="granted"){toast("No se concedió permiso para las notificaciones.");return}const registration=await registerCustomerServiceWorker();if(!registration){toast("No se pudo activar el servicio de notificaciones en este dispositivo.");return}const configResponse=await fetch(apiBase+"/api/push/config",{cache:"no-store"});if(!configResponse.ok)throw Error("No se pudo consultar la configuración push.");const config=await configResponse.json();if(!config.webPushAvailable||!config.publicKey){toast("El servidor todavía no tiene VAPID configurado.");return}const subscription=await registration.pushManager.getSubscription()||await registration.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:urlBase64ToUint8Array(config.publicKey)});const response=await fetch(apiBase+"/api/push/web/subscribe",{method:"POST",headers:{"Content-Type":"application/json","Accept":"application/json"},body:JSON.stringify({appId:"customer",subscription:subscription.toJSON()})});if(!response.ok)throw Error("El servidor no pudo guardar la suscripción web (HTTP "+response.status+").");toast("¡Este dispositivo quedó registrado para recibir avisos!")}
-function renderNotifications(){const items=notifications;$("#notifications-page").innerHTML='<div class="section-title compact"><div><span class="eyebrow">SIEMPRE AL DÍA</span><h2>Notificaciones</h2></div><button type="button" data-clear-notifications>Limpiar</button></div>'+(items.length?items.map(n=>'<article class="notification-card"><b>'+escapeHtml(n.title)+'</b><p>'+escapeHtml(n.message)+'</p><small>'+new Date(n.date).toLocaleString("es")+'</small></article>').join(""):'<div class="empty">Todavía no tienes notificaciones. 💜</div>')+'<button class="permission-button" type="button" data-enable-notifications>Activar notificaciones push</button><p class="hint">Los avisos del catálogo seguirán apareciendo dentro de Butterfly Café. Para recibir push en segundo plano, BC Admin debe tener configurado un servidor HTTPS de suscripciones y una clave pública VAPID. En la APK Android será necesaria además la integración nativa de mensajería.</p>'}
-function render(){if(!catalog)return;const productView=["home","coffee","sweets"].includes(view),eventView=view==="events",aboutView=view==="about",noticePage=view==="notifications";$("#products").hidden=!productView;$("#event-feature").hidden=!eventView;$("#about-page").hidden=!aboutView;$("#notifications-page").hidden=!noticePage;$("#catalog-heading").hidden=!productView;$("#search-wrap").hidden=!productView;$("#hero").hidden=view!=="home";$("#promotions-section").hidden=view!=="home";$("#news-section").hidden=view!=="home";$("#category-filters").hidden=!["coffee","sweets"].includes(view);
-const closure=catalog.about?.closureAlert,now=new Date(),today=now.getFullYear()+"-"+String(now.getMonth()+1).padStart(2,"0")+"-"+String(now.getDate()).padStart(2,"0"),notice=$("#closure-notice");if(productView&&closure?.date===today&&closure.message){notice.hidden=false;notice.innerHTML='<b>⚠️ Aviso importante: hoy estamos cerrados</b><span>'+escapeHtml(closure.message)+'</span>'}else{notice.hidden=true;notice.textContent=""}
-if(view==="home"){renderPromo();renderNews()}else{$("#promotions-section").hidden=true;$("#news-section").hidden=true}
-if(productView){const all=visibleProducts();renderFilters(all);renderProducts(all);$("#section-heading").textContent=view==="home"?"Nuestros favoritos":view==="coffee"?"Todos nuestros cafés":"Todos nuestros dulces";$("#section-kicker").textContent=view==="home"?"CAFÉS Y DULCES DESTACADOS":view==="coffee"?"NUESTRA CARTA DE CAFÉ":"ALGO DULCE PARA TI"}else if(eventView){$("#section-heading").textContent="Eventos";renderEvents()}else if(aboutView){$("#section-heading").textContent="Sobre nosotros";renderAbout()}else renderNotifications();
-document.querySelectorAll("[data-view]").forEach(b=>b.classList.toggle("active",b.dataset.view===view));}
+function renderNotifications(){
+  const items=notifications;
+  $("#notifications-page").innerHTML=
+    '<div class="section-title compact"><div><span class="eyebrow">SIEMPRE AL DÍA</span><h2>Notificaciones</h2></div><button type="button" data-clear-notifications>Limpiar</button></div>'+
+    (items.length?items.map(n=>'<article class="notification-card"><b>'+escapeHtml(n.title)+'</b><p>'+escapeHtml(n.message)+'</p><small>'+new Date(n.date).toLocaleString("es")+'</small></article>').join(""):'<div class="empty">Todavía no tienes notificaciones. 💜</div>')+
+    '<button class="permission-button" type="button" data-enable-notifications>Activar notificaciones push</button>'+
+    '<p class="hint">Las actualizaciones de productos y horarios aparecerán aquí cuando BC Admin publique cambios. Las notificaciones push en segundo plano requieren configurar Firebase para Android o VAPID para Web Push.</p>';
+}
+function renderSettings(){
+  const popupEnabled=localStorage.getItem("bc-popup-notifications")!=="false";
+  const version=window.BC_APP_VERSION||"Versión instalada";
+  $("#settings-page").innerHTML=
+    '<article class="settings-card">'+
+      '<span class="winner-label">PERSONALIZA TU EXPERIENCIA</span><h3>Ajustes de Butterfly Café</h3>'+
+      '<label class="settings-option"><span><b>Avisos del sistema</b><small>Mostrar avisos emergentes mientras la aplicación está abierta, cuando el dispositivo lo permita.</small></span><input type="checkbox" data-setting="bc-popup-notifications" '+(popupEnabled?"checked":"")+'></label>'+
+      '<div class="settings-actions"><button type="button" class="permission-button" data-enable-notifications>Configurar notificaciones push</button>'+
+      '<button type="button" class="settings-secondary" data-refresh-catalog>Comprobar actualizaciones</button>'+
+      '<button type="button" class="settings-secondary" data-clear-notifications>Limpiar historial de avisos</button></div>'+
+      '<p class="settings-version">Butterfly Café · '+escapeHtml(String(version))+'</p>'+
+      '<p class="hint">El catálogo y los avisos dentro de la aplicación se actualizan automáticamente al conectarse a Internet.</p>'+
+    '</article>';
+}
+function render(){
+  if(!catalog)return;
+  const productView=["home","coffee","sweets"].includes(view);
+  const eventView=view==="events",aboutView=view==="about",noticePage=view==="notifications",settingsPage=view==="settings";
+  const visibility=[
+    ["#products",productView],["#event-feature",eventView],["#about-page",aboutView],
+    ["#notifications-page",noticePage],["#settings-page",settingsPage],
+    ["#catalog-heading",productView],["#content-page-heading",!productView],
+    ["#search-wrap",productView],["#hero",view==="home"],
+    ["#promotions-section",view==="home"],["#news-section",view==="home"],
+    ["#category-filters",["coffee","sweets"].includes(view)]
+  ];
+  for(const [selector,visible] of visibility){const el=$(selector);if(el)el.hidden=!visible;}
+  $("#products").classList.toggle("home-groups",view==="home");
+  const closure=catalog.about?.closureAlert,now=new Date();
+  const today=now.getFullYear()+"-"+String(now.getMonth()+1).padStart(2,"0")+"-"+String(now.getDate()).padStart(2,"0");
+  const notice=$("#closure-notice");
+  if(productView&&closure?.date===today&&closure.message){
+    notice.hidden=false;
+    notice.innerHTML='<b>⚠️ Aviso importante: hoy estamos cerrados</b><span>'+escapeHtml(closure.message)+'</span>';
+  }else{notice.hidden=true;notice.textContent="";}
+  if(view==="home"){renderPromo();renderNews();}
+  if(productView){
+    const all=visibleProducts();
+    renderFilters(all);renderProducts(all);
+    $("#section-heading").textContent=view==="home"?"Nuestros favoritos":view==="coffee"?"Todos nuestros cafés":"Todos nuestros dulces";
+    $("#section-kicker").textContent=view==="home"?"CAFÉS Y DULCES DESTACADOS":view==="coffee"?"NUESTRA CARTA DE CAFÉ":"ALGO DULCE PARA TI";
+  }else if(eventView){
+    $("#content-page-title").textContent="Eventos";renderEvents();
+  }else if(aboutView){
+    $("#content-page-title").textContent="Sobre nosotros";renderAbout();
+  }else if(noticePage){
+    $("#content-page-title").textContent="Notificaciones";renderNotifications();
+  }else if(settingsPage){
+    $("#content-page-title").textContent="Ajustes";renderSettings();
+  }
+  document.querySelectorAll("[data-view]").forEach(b=>b.classList.toggle("active",b.dataset.view===view));
+  const settingsButton=$("[data-open-settings]");
+  if(settingsButton)settingsButton.classList.toggle("active",settingsPage);
+}
 function openProduct(id){const p=(catalog.products||[]).find(x=>String(x.id)===String(id));if(!p)return;const sold=p.available===false||p.stock===0;const ingredients=Array.isArray(p.ingredients)?p.ingredients.join(", "):p.ingredients||"";$("#product-detail").innerHTML='<div class="detail-cover"><img src="'+escapeHtml(safeUrl(p.image)||"assets/butterfly-cafe-logo.svg")+'" alt="'+escapeHtml(p.name)+'" data-detail-image></div><span class="winner-label">'+escapeHtml(categoryName(p.category))+'</span><h2>'+escapeHtml(p.name)+'</h2><p class="detail-description">'+escapeHtml(p.description||"")+'</p><div class="detail-price">'+money(p.price)+'</div>'+(ingredients?'<div class="detail-section"><b>Ingredientes</b><p>'+escapeHtml(ingredients)+'</p></div>':'')+'<div class="availability '+(sold?'unavailable':'available')+'">'+(sold?'Actualmente agotado':'Disponible hoy')+'</div>';$("#product-dialog").showModal()}
+function openPromotion(id){
+  const p=(catalog?.promotions||[]).find(x=>String(x.id)===String(id));
+  if(!p)return;
+  const image=safeUrl(p.image),until=p.validUntil||"";
+  $("#promotion-detail").innerHTML=
+    (image?'<div class="detail-cover"><img src="'+escapeHtml(image)+'" alt="'+escapeHtml(p.title||"Promoción")+'"></div>':'')+
+    '<span class="winner-label">✨ PROMOCIÓN ESPECIAL</span>'+
+    '<h2>'+escapeHtml(p.title||"Oferta especial")+'</h2>'+
+    '<p class="detail-description">'+escapeHtml(p.description||"")+'</p>'+
+    (until?'<div class="detail-section"><b>Vigencia</b><p>Válida hasta '+escapeHtml(until)+'</p></div>':'')+
+    '<div class="availability available">Promoción publicada por Butterfly Café</div>';
+  $("#promotion-dialog").showModal();
+}
 function expandImage(url){const safe=safeUrl(url);if(!safe)return;$("#expanded-image").src=safe;$("#image-dialog").showModal()}
-async function load(){if(loadBusy)return;loadBusy=true;try{const r=await fetch(CATALOG_URL+"?v="+Date.now(),{cache:"no-store"});if(!r.ok)throw Error("HTTP "+r.status);const next=await r.json();const ver=String(next.version??next.updatedAt??"");const savedVersion=localStorage.getItem("bc-catalog-version");const changed=(catalog&&ver!==String(catalog.version??catalog.updatedAt??""))||(!catalog&&savedVersion&&savedVersion!==ver);if(changed){recordNotification("Catálogo actualizado","Butterfly Café ha publicado nuevos productos o cambios en el menú.","catalog-"+ver);toast("✓ El catálogo se ha actualizado")}catalog=next;lastVersion=ver;localStorage.setItem("bc-catalog-version",ver);(catalog.notifications||[]).filter(n=>n&&n.active!==false&&n.id&&n.title&&n.message).forEach(n=>recordNotification(n.title,n.message,"announcement-"+n.id));render();window.dispatchEvent(new CustomEvent("bc:catalog-loaded",{detail:{version:ver}}))}catch(e){if(!catalog)$("#products").innerHTML='<div class="empty">No se pudo cargar el menú. Comprueba tu conexión.</div>';console.error("Error cargando catálogo",e)}finally{loadBusy=false}}
-window.BCApp={getCatalog:()=>catalog,getBackendApiBase,toast,notify:(title,message,key)=>recordNotification(title,message,key),money};
-document.addEventListener("click",e=>{const product=e.target.closest("[data-product]");if(product){openProduct(product.dataset.product);return}const image=e.target.closest("[data-image]");if(image){const p=catalog.products.find(x=>String(x.id)===image.dataset.image);if(p)expandImage(p.image);return}const expanded=e.target.closest("[data-expanded-url]");if(expanded){expandImage(expanded.dataset.expandedUrl);return}const filter=e.target.closest("[data-filter]");if(filter){categoryFilter=filter.dataset.filter;render();return}const dot=e.target.closest("[data-promo-dot]");if(dot){promoIndex=Number(dot.dataset.promoDot);renderPromo();return}if(e.target.closest("[data-promo-next]")){promoIndex++;renderPromo();return}if(e.target.closest("[data-promo-prev]")){promoIndex--;renderPromo();return}if(e.target.closest("[data-notify-open]")){showNotifications();return}if(e.target.closest("[data-close-dialog]")){e.target.closest("dialog")?.close();return}if(e.target.closest("[data-clear-notifications]")){notifications=[];localStorage.removeItem("bc-notifications");updateNotificationBadge();render();return}if(e.target.closest("[data-enable-notifications]")){enablePushNotifications().catch(error=>{console.error("Error activando push",error);toast("No se pudo activar push: "+error.message)});return}});
+async function load(){
+  if(loadBusy)return;
+  loadBusy=true;
+  try{
+    const r=await fetch(CATALOG_URL+"?v="+Date.now(),{cache:"no-store"});
+    if(!r.ok)throw Error("HTTP "+r.status);
+    const next=await r.json(),ver=String(next.version??next.updatedAt??"");
+    const savedVersion=localStorage.getItem("bc-catalog-version");
+    const changed=(catalog&&ver!==String(catalog.version??catalog.updatedAt??""))||(!catalog&&savedVersion&&savedVersion!==ver);
+    const newSpecificNotice=(next.notifications||[]).some(n=>n&&n.active!==false&&n.id&&n.title&&n.message&&!notifications.some(saved=>saved.key==="announcement-"+n.id));
+    if(changed&&!newSpecificNotice){
+      recordNotification("Catálogo actualizado","Butterfly Café ha publicado cambios en sus productos, promociones o información del local.","catalog-"+ver);
+      toast("✓ El catálogo se ha actualizado");
+    }
+    catalog=next;lastVersion=ver;localStorage.setItem("bc-catalog-version",ver);
+    (catalog.notifications||[]).filter(n=>n&&n.active!==false&&n.id&&n.title&&n.message).forEach(n=>recordNotification(n.title,n.message,"announcement-"+n.id));
+    render();
+    window.dispatchEvent(new CustomEvent("bc:catalog-loaded",{detail:{version:ver}}));
+  }catch(e){
+    if(!catalog)$("#products").innerHTML='<div class="empty">No se pudo cargar el menú. Comprueba tu conexión.</div>';
+    console.error("Error cargando catálogo",e);
+  }finally{loadBusy=false}
+}
+window.BCApp={getCatalog:()=>catalog,getBackendApiBase,toast,notify:(title,message,key)=>recordNotification(title,message,key),money,showNotifications,openPromotion};
+document.addEventListener("click",e=>{const product=e.target.closest("[data-product]");if(product){openProduct(product.dataset.product);return}const image=e.target.closest("[data-image]");if(image){const p=catalog.products.find(x=>String(x.id)===image.dataset.image);if(p)expandImage(p.image);return}const expanded=e.target.closest("[data-expanded-url]");if(expanded){expandImage(expanded.dataset.expandedUrl);return}const filter=e.target.closest("[data-filter]");if(filter){categoryFilter=filter.dataset.filter;render();return}const dot=e.target.closest("[data-promo-dot]");if(dot){promoIndex=Number(dot.dataset.promoDot);renderPromo();return}if(e.target.closest("[data-promo-next]")){promoIndex++;renderPromo();return}if(e.target.closest("[data-promo-prev]")){promoIndex--;renderPromo();return}if(e.target.closest("[data-notify-open]")){view="notifications";showAll=false;render();window.scrollTo({top:0,behavior:"smooth"});return}if(e.target.closest("[data-open-settings]")){view="settings";render();window.scrollTo({top:0,behavior:"smooth"});return}const promotion=e.target.closest("[data-promotion]");if(promotion){openPromotion(promotion.dataset.promotion);return}if(e.target.closest("[data-refresh-catalog]")){load();toast("Comprobando el catálogo…");return}if(e.target.closest("[data-close-dialog]")){e.target.closest("dialog")?.close();return}if(e.target.closest("[data-clear-notifications]")){notifications=[];localStorage.removeItem("bc-notifications");updateNotificationBadge();render();return}if(e.target.closest("[data-enable-notifications]")){enablePushNotifications().catch(error=>{console.error("Error activando push",error);toast("No se pudo activar push: "+error.message)});return}});
 document.querySelectorAll("[data-view]").forEach(b=>b.onclick=()=>{view=b.dataset.view;showAll=false;categoryFilter="all";render();window.scrollTo({top:0,behavior:"smooth"})});
+document.addEventListener("change",e=>{if(e.target.matches("[data-setting]")){localStorage.setItem(e.target.dataset.setting,String(e.target.checked));toast("Preferencias guardadas")}});
+document.addEventListener("keydown",e=>{const promo=e.target.closest?.(".promo-open[data-promotion]");if(promo&&(e.key==="Enter"||e.key===" ")){e.preventDefault();openPromotion(promo.dataset.promotion)}});
+
 $("#search").addEventListener("input",()=>render());$("#all").onclick=()=>{showAll=!showAll;render()};
 $("#product-detail").addEventListener("click",e=>{if(e.target.matches("[data-detail-image]"))expandImage(e.target.src)});
 restoreNotifications();registerCustomerServiceWorker();load();setInterval(load,30000);setInterval(()=>{if(view==="home"&&!document.hidden&&(catalog?.promotions||[]).filter(p=>p.active!==false).length>1){promoIndex++;renderPromo()}},6500);document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible")load()});window.addEventListener("online",load);
