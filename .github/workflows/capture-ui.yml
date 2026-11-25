@@ -150,7 +150,7 @@ jobs:
 
           // Verify the publication history and push setup pages are accessible.
           await page.locator('[data-admin-tab="history"]').click();
-          if (!(await page.locator('#publication-history-list').innerText()).includes('Todavía no hay publicaciones')) throw new Error('Publication history screen did not render its empty state.');
+          if (!(await page.locator('#publication-history-list').innerText()).includes('Publicación')) throw new Error('Publication history screen did not render existing records.');
           await page.locator('[data-admin-tab="push"]').click();
           await page.locator('#backend-api-url').fill('https://api.example.test');
           await page.locator('#orders-api-token').fill('playwright-admin-api-token-12345678901234567890');
