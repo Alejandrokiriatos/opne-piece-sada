@@ -83,7 +83,7 @@ function render(){
     ["#promotions-section",view==="home"],["#news-section",view==="home"],
     ["#category-filters",["coffee","sweets"].includes(view)]
   ];
-  for(const [selector,visible] of visibility){const el=$(selector);if(el)el.hidden=!visible;}
+  for(const [selector,visible] of visibility){const el=$(selector);if(el){el.hidden=!visible;el.style.display=visible?"":"none";}}
   $("#products").classList.toggle("home-groups",view==="home");
   const closure=catalog.about?.closureAlert,now=new Date();
   const today=now.getFullYear()+"-"+String(now.getMonth()+1).padStart(2,"0")+"-"+String(now.getDate()).padStart(2,"0");
