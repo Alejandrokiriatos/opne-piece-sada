@@ -42,19 +42,17 @@ jobs:
           cp index.html styles.css manifest.webmanifest www/
           npx esbuild app.js --bundle --format=iife --outfile=www/app.bundle.js
           if [ "${{ matrix.app }}" = "customer" ]; then
-            cp orders-client.js www/
             if [ -f service-worker.js ]; then cp service-worker.js www/; fi
           else
-            cp orders-admin.js www/
-            npx esbuild orders-admin.js --bundle --format=iife --outfile=www/orders-admin.bundle.js
             npx esbuild token-storage.js --bundle --format=iife --outfile=www/token-storage.bundle.js
+            npx esbuild notifications-admin.js --bundle --format=iife --outfile=www/notifications-admin.bundle.js
+            sed -i 's|<script src="notifications-admin.js"></script>|<script src="notifications-admin.bundle.js"></script>|' www/index.html
           fi
-          npx esbuild app-update.js --bundle --format=iife --outfile=www/app-update.bundle.js
+                    npx esbuild app-update.js --bundle --format=iife --outfile=www/app-update.bundle.js
           cp -R assets www/assets
           printf 'window.BC_APP_VERSION=%s;window.BC_APP_NAME="%s";window.BC_FCM_ENABLED=false;\n' "$GITHUB_RUN_NUMBER" "${{ matrix.app }}" > www/build-info.js
           sed -i 's|<script type="module" src="app-update.js"></script>|<script src="build-info.js"></script><script src="app-update.bundle.js"></script>|' www/index.html
           sed -i 's|<script src="app.js"></script>|<script src="app.bundle.js"></script>|' www/index.html
-          if [ "${{ matrix.app }}" = "admin" ]; then sed -i 's|<script src="orders-admin.js"></script>|<script src="orders-admin.bundle.js"></script>|' www/index.html; fi
           npx cap add android
           npx cap sync android
           # Add native APK installation so the app downloads in-place and opens Android's installer.
