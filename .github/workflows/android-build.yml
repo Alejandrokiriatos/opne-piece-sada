@@ -45,6 +45,8 @@ jobs:
             if [ -f service-worker.js ]; then cp service-worker.js www/; fi
           else
             npx esbuild token-storage.js --bundle --format=iife --outfile=www/token-storage.bundle.js
+            npx esbuild notifications-admin.js --bundle --format=iife --outfile=www/notifications-admin.bundle.js
+            sed -i 's|<script src="notifications-admin.js"></script>|<script src="notifications-admin.bundle.js"></script>|' www/index.html
           fi
                     npx esbuild app-update.js --bundle --format=iife --outfile=www/app-update.bundle.js
           cp -R assets www/assets
