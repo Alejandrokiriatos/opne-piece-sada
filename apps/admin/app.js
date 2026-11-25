@@ -195,8 +195,8 @@ $("#clear-all").onclick=()=>{if(!catalog)return;if(!confirm("Esto borrará los p
 document.querySelectorAll("[data-admin-tab]").forEach(b=>b.onclick=()=>{document.querySelectorAll("[data-admin-tab]").forEach(x=>x.classList.toggle("selected",x===b));document.querySelectorAll("[data-admin-page]").forEach(x=>x.hidden=x.dataset.adminPage!==b.dataset.adminTab);if(b.dataset.adminTab==="hours"&&catalog){renderWeeklyHours(catalog.about?.weeklyHours||defaultWeeklySchedule());$("#weekly-hours").style.display="grid"}if(b.dataset.adminTab==="dashboard")renderDashboard()});
 $("#dashboard-refresh").onclick=renderDashboard;
 $("#backend-api-url").addEventListener("input",updatePushStatus);
-$("#orders-api-token").addEventListener("change",()=>{const value=$("#orders-api-token").value.trim();if(value.length>=32)saveBackendAdminToken(value).then(()=>status("Token de pedidos guardado de forma segura ✓",true)).catch(e=>status(e.message))});
-$("#save-api-settings").onclick=()=>saveBackendConnection().then(()=>status("Servidor preparado. Publica el catálogo para habilitar pedidos.",true)).catch(e=>status(e.message));
+$("#orders-api-token").addEventListener("change",()=>{const value=$("#orders-api-token").value.trim();if(value.length>=32)saveBackendAdminToken(value).then(()=>status("Token de notificaciones guardado de forma segura ✓",true)).catch(e=>status(e.message))});
+$("#save-api-settings").onclick=()=>saveBackendConnection().then(()=>status("Servidor preparado. Publica el catálogo para habilitar las notificaciones push.",true)).catch(e=>status(e.message));
 window.BCAdmin={getCatalog:()=>catalog,getApiBase:getBackendApiBase,getApiToken:getBackendAdminToken,apiFetch:backendApiFetch,saveApiToken:saveBackendAdminToken,saveConnection:saveBackendConnection,setApiBase:value=>{catalog.backend=catalog.backend||{};catalog.backend.apiBaseUrl=String(value||"").trim();$("#backend-api-url").value=catalog.backend.apiBaseUrl;updatePushStatus();updateDraftStatus()},refreshDashboard:renderDashboard};
 $("#preview-open").onclick=openCustomerPreview;
 document.querySelectorAll("[data-open-preview]").forEach(b=>b.onclick=openCustomerPreview);
