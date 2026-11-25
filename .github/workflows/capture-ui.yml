@@ -42,18 +42,72 @@ jobs:
           const page = await browser.newPage({viewport:{width:430,height:932},deviceScaleFactor:1});
           const pageErrors = [];
           page.on('pageerror', e => pageErrors.push(e.message));
-          await page.goto('http://127.0.0.1:4173/apps/customer/', {waitUntil:'networkidle'});
-          await page.waitForSelector('[data-add-cart="cappuccino"]');
-          await page.locator('[data-add-cart="cappuccino"]').first().click();
-          await page.locator('#cart-open').waitFor({state:'visible'});
-          await page.locator('#cart-open').click();
-          await page.locator('#cart-dialog[open]').waitFor();
-          if (!(await page.locator('#cart-content').innerText()).includes('Cappuccino')) throw new Error('Customer cart did not show the selected product.');
-          if (!(await page.locator('#cart-content').innerText()).includes('todavía no ha activado')) throw new Error('Customer orders should remain disabled until the owner approves the catalogue.');
-          if (!(await page.locator('#checkout-form').isHidden())) throw new Error('Checkout must stay hidden until customer order intake is enabled.');
-          await page.locator('#cart-clear').click();
-          await page.locator('[data-cart-close]').click();
+          const { readFile } = await import('node:fs/promises');
+          const catalog = JSON.parse(await readFile('data/catalog.json','utf8'));
+          const customerCatalog = structuredClone(catalog);
+          for (const promotion of customerCatalog.promotions || []) {
+            promotion.active = true;
+            promotion.validUntil = '2099-12-31';
+          }
+          await page.route('https://raw.githubusercontent.com/Alejandrokiriatos/opne-piece-sada/main/data/catalog.json*',
+            route => route.fulfill({status:200,contentType:'application/json',body:JSON.stringify(customerCatalog)}));
+          await page.goto('http://127.0.0.1:4173/apps/customer/', {waitUntil:'domcontentloaded'});
+          await page.waitForFunction(() => document.querySelector('#products .product-open') !== null);
+          if (await page.locator('#cart-open, #cart-dialog, [data-add-cart]').count()) throw new Error('The customer APK still exposes cart or order controls.');
           await page.screenshot({path:'butterfly-cafe-cliente.png',fullPage:true});
+
+          // The top notification bell must open the in-app notification center.
+          await page.locator('[data-notify-open]').click();
+          await page.locator('#notifications-page:not([hidden])').waitFor();
+          if (!(await page.locator('#content-page-title').innerText()).includes('Notificaciones')) throw new Error('The notification bell did not open the notification center.');
+
+          // Settings must be reachable and preserve its preference.
+          await page.locator('[data-open-settings]').click();
+          await page.locator('#settings-page:not([hidden])').waitFor();
+          const popupSetting = page.locator('[data-setting="bc-popup-notifications"]');
+          await popupSetting.uncheck();
+          await popupSetting.check();
+          if (await page.locator('#settings-page').innerText().then(t=>!t.includes('Comprobar actualizaciones'))) throw new Error('The settings page is missing the catalogue refresh action.');
+
+          // Each content destination must be isolated from the coffee/dessert catalogue.
+          await page.locator('[data-view="events"]').click();
+          await page.locator('#event-feature:not([hidden])').waitFor();
+          if (!(await page.locator('#products').isHidden())) throw new Error('Events still displays the product catalogue.');
+          if (await page.locator('#about-page').isVisible()) throw new Error('About is visible together with Events.');
+          await page.locator('[data-view="about"]').click();
+          await page.locator('#about-page:not([hidden])').waitFor();
+          if (!(await page.locator('#products').isHidden())) throw new Error('About still displays the product catalogue.');
+          if (await page.locator('#event-feature').isVisible()) throw new Error('Events is visible together with About.');
+
+          await page.locator('[data-view="coffee"]').click();
+          await page.locator('#products:not([hidden])').waitFor();
+          const coffeeText = await page.locator('#products').innerText();
+          const sweetIds = customerCatalog.products.filter(p => {
+            const c = customerCatalog.categories.find(x=>x.id===p.category)||{};
+            const marker = String(c.group||c.type||c.name||'').toLowerCase();
+            return marker==='sweet'||marker==='dessert'||/dulce|postre|pastel|sweet|dessert|bakery|helado/.test(marker);
+          }).map(p=>p.name);
+          for (const name of sweetIds) if (coffeeText.includes(name)) throw new Error('Sweet product leaked into the coffee section: '+name);
+          await page.locator('[data-view="sweets"]').click();
+          const sweetsText = await page.locator('#products').innerText();
+          const coffeeIds = customerCatalog.products.filter(p => {
+            const c = customerCatalog.categories.find(x=>x.id===p.category)||{};
+            const marker = String(c.group||c.type||c.name||'').toLowerCase();
+            return marker==='coffee'||marker==='drink'||/cafe|café|coffee|espresso|frappe/.test(marker);
+          }).map(p=>p.name);
+          for (const name of coffeeIds) if (sweetsText.includes(name)) throw new Error('Coffee product leaked into the sweets section: '+name);
+
+          // Product and promotion cards open their own detail sheets.
+          await page.locator('[data-view="coffee"]').click();
+          await page.locator('[data-product]').first().click();
+          await page.locator('#product-dialog[open]').waitFor();
+          await page.locator('[data-close-dialog]').click();
+          await page.locator('[data-view="home"]').click();
+          await page.locator('[data-promotion]').first().click();
+          await page.locator('#promotion-dialog[open]').waitFor();
+          if (!(await page.locator('#promotion-detail').innerText()).includes('PROMOCIÓN')) throw new Error('Promotion details did not open.');
+          await page.locator('[data-close-dialog]').click();
+          await page.locator('[data-view="home"]').click();          await page.screenshot({path:'butterfly-cafe-cliente.png',fullPage:true});
           await page.goto('http://127.0.0.1:4173/apps/admin/', {waitUntil:'networkidle'});
           await page.waitForFunction(() => document.querySelector('#metric-products')?.textContent === '4');
           await page.screenshot({path:'butterfly-cafe-admin.png',fullPage:true});
@@ -103,50 +157,23 @@ jobs:
           await page.locator('#save-api-settings').click();
           if (!(await page.locator('#push-config-status').innerText()).includes('URL del servidor válida')) throw new Error('Backend HTTPS URL validation did not update.');
 
-          // Mock the Worker API to smoke-test order management, sales and push administration.
-          let apiPatchRequests = 0, apiPushRequests = 0;
+          // Mock only the push sender API. Orders and sales screens are intentionally removed.
+          let apiPushRequests = 0;
           await page.route('https://api.example.test/**', async route => {
             const request = route.request(), url = new URL(request.url());
-            if (url.pathname === '/api/admin/orders' && request.method() === 'GET') {
-              return route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({orders:[{
-                id:'order-test-1',order_number:'BC-TEST-0001',created_at:'2026-11-23T12:00:00.000Z',
-                customer_name:'Cliente Playwright',customer_phone:'+15555550100',customer_notes:'Sin azúcar',
-                order_status:'pending',payment_status:'unpaid',subtotal_cents:550,currency:'USD',
-                items:[{productId:'cappuccino',productName:'Cappuccino',quantity:1,unitPrice:5.5,lineTotal:5.5}]
-              }]})});
-            }
-            if (url.pathname === '/api/admin/orders/order-test-1' && request.method() === 'PATCH') {
-              apiPatchRequests++;
-              return route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({order:{id:'order-test-1'}})});
-            }
-            if (url.pathname === '/api/admin/stats' && request.method() === 'GET') {
-              return route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({
-                from:'2026-11-01',to:'2026-11-23',currency:'USD',orderCount:3,paidOrderCount:2,
-                unpaidOrderCount:1,completedOrderCount:1,revenue:11,
-                topProducts:[{product_name:'Cappuccino',units_sold:2,revenue:11}],
-                daily:[{day:'2026-11-23',paid_orders:2,revenue_cents:1100}]
-              })});
-            }
             if (url.pathname === '/api/admin/push/send' && request.method() === 'POST') {
               apiPushRequests++;
               return route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({success:true,result:{webSent:1,nativeSent:0,failed:0,total:1}})});
             }
             return route.fulfill({status:404,contentType:'application/json',body:'{"error":"Not found"}'});
           });
-          await page.locator('[data-admin-tab="orders"]').click();
-          if (await page.locator('#orders-enabled').isChecked()) throw new Error('Order intake must start disabled until the owner approves catalogue prices.');
-          await page.locator('#orders-enabled').check();
-          await page.locator('.order-card').waitFor();
-          if (!(await page.locator('#orders-list').innerText()).includes('Cliente Playwright')) throw new Error('Admin did not render the test order.');
-          await page.locator('[data-order-status]').selectOption('ready');
-          await page.locator('[data-payment-status]').selectOption('paid');
-          await page.locator('[data-order-save]').click();
-          await page.waitForFunction(() => document.querySelector('.order-card-status')?.textContent.includes('Cambios guardados'));
-          if (apiPatchRequests !== 1) throw new Error('Admin order status update was not sent.');
-          await page.locator('[data-admin-tab="sales"]').click();
-          await page.waitForFunction(() => document.querySelector('#sales-revenue')?.textContent.includes('11.00'));
-          if (!(await page.locator('#sales-top-products').innerText()).includes('Cappuccino')) throw new Error('Sales top-product data was not displayed.');
+          if (await page.locator('[data-admin-tab="orders"],[data-admin-tab="sales"]').count()) throw new Error('BC Admin still exposes orders or sales tabs.');
+          if (await page.locator('[data-admin-page="orders"],[data-admin-page="sales"]').count()) throw new Error('BC Admin still contains orders or sales pages.');
           await page.locator('[data-admin-tab="push"]').click();
+          await page.locator('#backend-api-url').fill('https://api.example.test');
+          await page.locator('#orders-api-token').fill('playwright-admin-api-token-12345678901234567890');
+          await page.locator('#save-api-settings').click();
+          if (!(await page.locator('#push-config-status').innerText()).includes('URL del servidor válida')) throw new Error('Backend HTTPS URL validation did not update.');
           await page.locator('#push-send-title').fill('Playwright notice');
           await page.locator('#push-send-body').fill('Testing admin push workflow.');
           await page.locator('#push-send').click();
@@ -155,7 +182,6 @@ jobs:
 
           // Verify optimistic concurrency: a changed catalog SHA must block the write.
           let mode = 'conflict', catalogReads = 0, putRequests = 0, mediaPutRequests = 0, catalogPutRequests = 0, publishedCatalog = null;
-          const { readFile } = await import('node:fs/promises');
           const catalogBase64 = (await readFile('data/catalog.json')).toString('base64');
           await page.route('https://api.github.com/**', async route => {
             const request = route.request(), url = new URL(request.url());
